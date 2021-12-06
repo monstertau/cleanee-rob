@@ -1,0 +1,5 @@
+node_modules/
+
+# Don't commit build output.
+*.js
+*.js.map
