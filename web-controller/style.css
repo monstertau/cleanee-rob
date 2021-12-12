@@ -10,18 +10,20 @@ body {
 }
 
 .form-group {
+    display: flex;
+    flex-wrap: wrap;
     margin-bottom: 20px;
 }
 
 .form-group label, .form-group input {
     display: block;
-    width: 100%;
     box-sizing: border-box;
     font-size: 16px;
 }
 
 .form-group label {
     margin-bottom: 5px;
+    flex-basis: 100%;
 }
 
 .form-group input {
@@ -30,6 +32,18 @@ body {
     border: 1px solid #ddd;
     box-shadow: none;
     outline: transparent;
+}
+
+.form-group input:focus {
+    border-color: #aaa;
+}
+
+.form-group input:not(.additional) {
+    flex: 1;
+}
+
+.form-group input:not(:last-child) {
+    margin-right: 10px;
 }
 
 .state-divs {

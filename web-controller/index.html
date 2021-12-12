@@ -20,19 +20,23 @@
             <p id="connection-error"></p>
 
             <form id="connection-form" name="connection-form">
-                <div class="form-group">
-                    <label for="cam-ip">IP Camera address</label>
-                    <input type="text" id="cam-ip" name="cam-ip" placeholder="127.0.0.1">
-                </div>
+                <fieldset>
+                    <div class="form-group">
+                        <label for="cam-ip">IP Camera address</label>
+                        <input type="text" id="cam-ip" name="cam-ip" placeholder="127.0.0.1">
+                        <input class="additional" type="text" id="cam-port" name="cam-port" placeholder="8080">
+                    </div>
 
-                <div class="form-group">
-                    <label for="mqtt-ip">MQTT broker IP address</label>
-                    <input type="text" id="mqtt-ip" name="mqtt-ip" placeholder="127.0.0.1">
-                </div>
+                    <div class="form-group">
+                        <label for="mqtt-ip">MQTT broker IP address</label>
+                        <input type="text" id="mqtt-ip" name="mqtt-ip" placeholder="127.0.0.1">
+                        <input class="additional" type="text" id="mqtt-port" name="mqtt-port" placeholder="9001">
+                    </div>
 
-                <div class="form-group">
-                    <button type="submit">Connect</button>
-                </div>
+                    <div class="form-group">
+                        <button type="submit">Connect</button>
+                    </div>
+                </fieldset>
             </form>
         </div>
 

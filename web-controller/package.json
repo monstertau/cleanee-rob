@@ -5,5 +5,8 @@
   },
   "devDependencies": {
     "typescript": "^4.2.4"
+  },
+  "dependencies": {
+    "@types/paho-mqtt": "^1.0.4"
   }
 }

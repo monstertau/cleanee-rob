@@ -1,14 +1,39 @@
 import { ApplicationUI } from "./application-ui.js";
+import { MQTTConnection } from "./mqtt-connection.js";
 
 export interface ApplicationState {
     onEnter(applicationUI: ApplicationUI): void;
     onExit(applicationUI: ApplicationUI): void;
 }
 
+class Host {
+    constructor(
+        public readonly address: string,
+        public readonly port: number
+    ) {}
+
+    toString(): string {
+        return `${this.address}:${this.port}`;
+    }
+}
+
+type SuccessfulConnection = {
+    status: "success";
+}
+
+type FailedConnection = {
+    status: "failed";
+    reason: string;
+}
+
+type ConnectionResult = SuccessfulConnection | FailedConnection;
+
 export class DisconnectedState implements ApplicationState {
 
     static readonly CamIpFieldId = "cam-ip";
+    static readonly CamPortFieldId = "cam-port";
     static readonly MqttIpFieldId = "mqtt-ip";
+    static readonly MqttPortFieldId = "mqtt-port";
 
     private connectionDetailsForm: HTMLFormElement | undefined = undefined;
     private connectionErrorEl: HTMLElement | undefined = undefined;
@@ -34,44 +59,79 @@ export class DisconnectedState implements ApplicationState {
 
         const formData = new FormData(this.connectionDetailsForm);
         this.initializeConnection(
-            formData.get(DisconnectedState.CamIpFieldId) as string,
-            formData.get(DisconnectedState.MqttIpFieldId) as string
+            new Host(
+                formData.get(DisconnectedState.CamIpFieldId) as string,
+                parseInt(formData.get(DisconnectedState.CamPortFieldId) as string)
+            ),
+            new Host(
+                formData.get(DisconnectedState.MqttIpFieldId) as string,
+                parseInt(formData.get(DisconnectedState.MqttPortFieldId) as string)
+            )
         );
     }
 
-    private initializeConnection(camIp: string, mqttIp: string): void {
-        Promise.all([this.verifyCamIp(camIp), this.verifyMqttIp(mqttIp)])
-            .then(([camFeed, _]) => {
+    private initializeConnection(camHost: Host, mqttHost: Host): void {
+        const mqttConnection = new MQTTConnection(
+            mqttHost.address,
+            mqttHost.port
+        );
+
+        this.connectionDetailsForm?.children[0].setAttribute("disabled", "disabled");
+        Promise.all([this.verifyCamIp(camHost), this.verifyMqttConnection(mqttConnection)])
+            .then(([camConnectionResult, mqttConnectionResult]) => {
+                const errors = [camConnectionResult, mqttConnectionResult]
+                    .filter(res => res.status == "failed")
+                    .map(res => (res as FailedConnection).reason)
+                    .map(reason => `<li>${reason}</li>`);
+
+                if (errors.length > 0 && this.connectionErrorEl) {
+                    this.connectionErrorEl.innerHTML = `<ul>${errors.join("")}</ul>`;
+                    this.connectionDetailsForm?.children[0].removeAttribute("disabled");
+                    return;
+                }
+
                 const event = new CustomEvent("application-state-change", {
-                    detail: new ConnectedState(camFeed)
+                    detail: new ConnectedState(camHost, mqttConnection)
                 });
 
                 window.dispatchEvent(event);
             })
-            .catch(reason => {
+            .catch(() => {
                 if (this.connectionErrorEl) {
-                    this.connectionErrorEl.textContent = reason;
+                    this.connectionErrorEl.textContent = "An unknown error occured.";
                 }
+                this.connectionDetailsForm?.children[0].removeAttribute("disabled");
             });
     }
 
-    private verifyMqttIp(mqttIp: string): Promise<void> {
-        return Promise.resolve();
+    private verifyMqttConnection(mqttConnection: MQTTConnection): Promise<ConnectionResult> {
+        return new Promise((resolve, reject) => {
+            mqttConnection
+                .connect()
+                .then(() => resolve({ status: "success" }))
+                .catch(reason => resolve({ status: "failed", reason }))
+        });
     }
 
-    private verifyCamIp(camIp: string): Promise<string> {
+    private verifyCamIp(camHost: Host): Promise<ConnectionResult> {
         return new Promise((resolve, reject) => {
-            const feed = `http://${camIp}/video`;
+            const feed = `http://${camHost}/video`;
             fetch(feed)
                 .then(response => {
                     if (response.status == 200) {
-                        resolve(`http://${camIp}`);
+                        resolve({ status: "success" });
                     } else {
                         console.log(response);
-                        reject(`Camera stream returned status ${response.status}`);
+                        resolve({
+                            status: "failed",
+                            reason: `Camera stream returned status ${response.status}`
+                        });
                     }
                 })
-                .catch(reason => reject(`Failed to connect to IP camera: ${reason}`));
+                .catch(reason => resolve({
+                    status: "failed",
+                    reason: `Failed to connect to IP camera: ${reason}`
+                }));
         });
     }
 }
@@ -79,13 +139,14 @@ export class DisconnectedState implements ApplicationState {
 export class ConnectedState implements ApplicationState {
 
     constructor(
-        private camUrl: string
+        private camHost: Host,
+        private mqttConnection: MQTTConnection,
     ) {}
 
     onEnter(applicationUI: ApplicationUI): void {
         applicationUI.showDiv("connected-state");
         applicationUI.getApplicationElement<HTMLImageElement>("camera-feed")
-            .src = `${this.camUrl}/video`;
+            .src = `http://${this.camHost}/video`;
 
         applicationUI.connectionStatus.textContent = "Connected";
     }
