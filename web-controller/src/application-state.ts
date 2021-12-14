@@ -1,5 +1,5 @@
 import { ApplicationUI } from "./application-ui.js";
-import { MQTTConnection } from "./mqtt-connection.js";
+import { ControlConnection } from "./control-connection.js";
 
 export interface ApplicationState {
     onEnter(applicationUI: ApplicationUI): void;
@@ -71,7 +71,7 @@ export class DisconnectedState implements ApplicationState {
     }
 
     private initializeConnection(camHost: Host, mqttHost: Host): void {
-        const mqttConnection = new MQTTConnection(
+        const mqttConnection = new ControlConnection(
             mqttHost.address,
             mqttHost.port
         );
@@ -104,7 +104,7 @@ export class DisconnectedState implements ApplicationState {
             });
     }
 
-    private verifyMqttConnection(mqttConnection: MQTTConnection): Promise<ConnectionResult> {
+    private verifyMqttConnection(mqttConnection: ControlConnection): Promise<ConnectionResult> {
         return new Promise((resolve, reject) => {
             mqttConnection
                 .connect()
@@ -140,7 +140,7 @@ export class ConnectedState implements ApplicationState {
 
     constructor(
         private camHost: Host,
-        private mqttConnection: MQTTConnection,
+        private mqttConnection: ControlConnection,
     ) {}
 
     onEnter(applicationUI: ApplicationUI): void {
