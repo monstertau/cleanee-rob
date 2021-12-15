@@ -1,6 +1,16 @@
-import { ApplicationState, DisconnectedState } from "./application-state.js";
-import { ApplicationUI } from "./application-ui.js";
+import type { ApplicationState } from "./state/application-state.js";
 
+import { ApplicationUI } from "./application-ui.js";
+import { DisconnectedState } from "./state/disconnected-state.js";
+
+/**
+ * The application class is the main entry point to the controller application.
+ *
+ * It uses the state pattern to manage interactions with the page. The state
+ * can be changed from anywhere by dispatching the "application-state-change"
+ * custom event to the global window object. The custom event must have the new
+ * state assigned to the 'detail' property of the custom event.
+ */
 export class Application {
 
     private applicationUI = new ApplicationUI();
@@ -18,6 +28,12 @@ export class Application {
         this.applicationState.onEnter(this.applicationUI);
     }
 
+    /**
+     * Switch the state of the application, calling the appropriate lifecycle
+     * methods on the exiting and entering state.
+     *
+     * @param newState The new state to enter.
+     */
     setState(newState: ApplicationState) {
         this.applicationState.onExit(this.applicationUI);
         this.applicationState = newState;
