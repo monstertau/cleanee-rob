@@ -12,6 +12,6 @@ $ npm run build
 ```
 When you are developing, you most likely don't want to keep rebuilding manually. For that, run:
 ```
-$ npm run watch
+$ npm run dev
 ```
-Now, compilation will happen automatically when a source file is changed.
+Now, compilation will happen automatically when a source file is changed and a web server will start that shows the `index.html` file.

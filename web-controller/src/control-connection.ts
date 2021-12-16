@@ -1,6 +1,6 @@
 /// <reference path="../node_modules/@types/paho-mqtt/index.d.ts" />
 
-import { DisconnectedState } from "./state/disconnected-state";
+import { DisconnectedState } from "./state/disconnected-state.js";
 
 export enum Direction {
     FORWARD = "forward",
@@ -26,6 +26,22 @@ export interface ControlStateListener {
     onControlStateChange(newState: ControlState): void;
 }
 
+type MoveCommand = {
+    command: "move",
+    metadata: {
+        magnitude: number
+    }
+};
+
+type RotateCommand = {
+    command: "rotate",
+    metadata: {
+        magnitude: number
+    }
+};
+
+type RobotCommand = MoveCommand | RotateCommand;
+
 /**
  * The ControlConnection class encapsulates the operations that can be performed
  * on the robot. It keeps track of the control state and exposes methods to
@@ -40,7 +56,9 @@ export class ControlConnection {
 
     private readonly client: Paho.MQTT.Client;
 
-    private movingInDirections: Set<Direction> = new Set();
+    private movementMagnitude: number = 0;
+    private rotationMagnitude: number = 0;
+
     private controlStateListener: ControlStateListener | undefined = undefined;
 
     constructor(host: string, port: number) {
@@ -81,45 +99,75 @@ export class ControlConnection {
     }
 
     /**
-     * Start moving in a certain direction. This method is idempotent, meaning
-     * it can be called multiple times without explicitely stopping the movement
-     * and it will appear as if only a single command was sent.
+     * Update the movement of the robot with a new magnitude.
      *
-     * @param direction The direction for which the command is given.
+     * @param magnitude The new magnitude of the movement the robot should
+     *                  execute.
      */
-    startDirection(direction: Direction): void {
-        // Don't update the state if we are already moving in this direction.
-        if (this.movingInDirections.has(direction)) {
+    updateMovement(magnitude: number): void {
+        // Don't update the state if the magnitude matches already.
+        if (this.movementMagnitude === magnitude) {
             return;
         }
 
-        this.movingInDirections.add(direction);
-        this.send("start-movement", { direction });
+        this.verifyMagnitude(magnitude);
+
+        this.movementMagnitude = magnitude;
+        this.send({
+            command: "move",
+            metadata: {
+                magnitude
+            }
+        });
+
+        // No concurrent steering and moving.
+        if (this.movementMagnitude !== 0) {
+            this.rotationMagnitude = 0;
+        }
 
         this.updateControlStateListener();
     }
 
     /**
-     * Stop moving in a certain direction. This method is idemptotent, just like
-     * {@link ControlConnection#startMoving}.
+     * Update the rotation of the robot with a new magnitude.
      *
-     * @param direction The direction for which we want to stop moving.
+     * @param magnitude The new magnitude of the rotation the robot should
+     *                  execute.
      */
-    stopDirection(direction: Direction): void {
-        // Don't update the state if we are not moving in this direction.
-        if (!this.movingInDirections.has(direction)) {
+    updateRotation(magnitude: number): void {
+        // Don't update the state if the magnitude matches already.
+        if (this.rotationMagnitude === magnitude) {
             return;
         }
 
-        this.movingInDirections.delete(direction);
-        this.send("stop-movement", { direction });
+        this.verifyMagnitude(magnitude);
+
+        this.rotationMagnitude = magnitude;
+        this.send({
+            command: "rotate",
+            metadata: {
+                magnitude
+            }
+        });
+
+        // No concurrent steering and moving.
+        if (this.rotationMagnitude !== 0) {
+            this.movementMagnitude = 0;
+        }
+
         this.updateControlStateListener();
     }
 
-    private send(action: string, payload: any, qos: Paho.MQTT.Qos = 2, retained: boolean = false) {
+    private verifyMagnitude(magnitude: number): void {
+        if (magnitude < -1 || magnitude > 1) {
+            throw new Error(`The magnitude value must be in range [-1, 1]. ${magnitude} given.`);
+        }
+    }
+
+    private send(command: RobotCommand, qos: Paho.MQTT.Qos = 2, retained: boolean = false) {
         this.client.send(
             ControlConnection.MQTTTopic,
-            JSON.stringify({ action, payload }),
+            JSON.stringify(command),
             qos,
             retained
         );
@@ -130,10 +178,21 @@ export class ControlConnection {
             return;
         }
 
+        const directions: Set<Direction> = new Set();
+        if (this.movementMagnitude !== 0) {
+            directions.add(
+                this.movementMagnitude > 0 ? Direction.FORWARD : Direction.BACKWARD
+            );
+        }
+
+        if (this.rotationMagnitude !== 0) {
+            directions.add(
+                this.rotationMagnitude > 0 ? Direction.RIGHT : Direction.LEFT
+            );
+        }
+
         this.controlStateListener.onControlStateChange({
-            // We want to copy the set 'movingInDirections' so we don't expose
-            // a reference of it outside of this class.
-            activeDirections: new Set(this.movingInDirections)
+            activeDirections: directions
         });
     }
 

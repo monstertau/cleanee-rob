@@ -1,9 +1,9 @@
-import type { ApplicationUI } from "../application-ui";
-import type { ApplicationState } from "./application-state";
+import type { ApplicationUI } from "../application-ui.js";
+import type { ApplicationState } from "./application-state.js";
 
-import { ControlConnection } from "../control-connection";
-import { Host } from "../lib";
-import { ConnectedState } from "./connected-state";
+import { ControlConnection } from "../control-connection.js";
+import { Host } from "../lib.js";
+import { ConnectedState } from "./connected-state.js";
 
 type SuccessfulConnection = {
     status: "success";

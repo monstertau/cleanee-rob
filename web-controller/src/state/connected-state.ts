@@ -1,5 +1,5 @@
-import type { ApplicationUI } from "../application-ui";
-import type { ControlStateListener, ControlConnection, ControlState } from "../control-connection";
+import type { ApplicationUI } from "../application-ui.js";
+import type { ControlStateListener, ControlConnection, ControlState } from "../control-connection.js";
 
 import { Direction } from "../control-connection.js";
 import { Host } from "../lib";
@@ -60,19 +60,19 @@ export class ConnectedState implements ApplicationState, ControlStateListener {
     private onKeyDown(e: KeyboardEvent) {
         switch (e.code) {
             case 'KeyW':
-                this.controlConnection.startDirection(Direction.FORWARD);
+                this.controlConnection.updateMovement(1);
                 break;
 
             case 'KeyS':
-                this.controlConnection.startDirection(Direction.BACKWARD);
+                this.controlConnection.updateMovement(-1);
                 break;
 
             case 'KeyA':
-                this.controlConnection.startDirection(Direction.LEFT);
+                this.controlConnection.updateRotation(-1);
                 break;
 
             case 'KeyD':
-                this.controlConnection.startDirection(Direction.RIGHT);
+                this.controlConnection.updateRotation(1);
                 break;
         }
     }
@@ -80,19 +80,19 @@ export class ConnectedState implements ApplicationState, ControlStateListener {
     private onKeyUp(e: KeyboardEvent) {
         switch (e.code) {
             case 'KeyW':
-                this.controlConnection.stopDirection(Direction.FORWARD);
+                this.controlConnection.updateMovement(0);
                 break;
 
             case 'KeyS':
-                this.controlConnection.stopDirection(Direction.BACKWARD);
+                this.controlConnection.updateMovement(0);
                 break;
 
             case 'KeyA':
-                this.controlConnection.stopDirection(Direction.LEFT);
+                this.controlConnection.updateRotation(0);
                 break;
 
             case 'KeyD':
-                this.controlConnection.stopDirection(Direction.RIGHT);
+                this.controlConnection.updateRotation(0);
                 break;
         }
     }

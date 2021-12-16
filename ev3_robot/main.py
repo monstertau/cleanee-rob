@@ -1,7 +1,7 @@
 # Import the necessary libraries
 import paho.mqtt.client as mqtt
 from msg_parser import CommandFactory
-
+import yaml
 import time
 import math
 from ev3dev2.motor import *
@@ -24,10 +24,8 @@ motorB = LargeMotor(OUTPUT_B)
 # # gps_sensor_in4 = GPSSensor(INPUT_4)
 # # pen_in5 = Pen(INPUT_5)
 robot = Robot(motorA, motorB)
-
-
 cmdFactory = CommandFactory()
-
+configs = {}
 
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code " + str(rc))
@@ -41,16 +39,24 @@ def on_message(client, userdata, msg):
     except Exception as e:
         print(e)
 
+with open('config.yml') as f:
+    configs = yaml.load(f, Loader=yaml.FullLoader)
 
 def main():
-    client = mqtt.Client()
-    client.connect("35.220.183.70", 8883, 60)
+    mqttConf = configs.get("mqtt_server")
+    if mqttConf is not None:
+        host = mqttConf.get("host", "localhost")
+        port = mqttConf.get("port", 1883)
+        keep_alive = mqttConf.get("keep_alive", 60)
+        client = mqtt.Client()
+        client.connect(host, port, keep_alive)
 
-    client.on_connect = on_connect
-    client.on_message = on_message
+        client.on_connect = on_connect
+        client.on_message = on_message
 
-    client.loop_forever()
-
+        client.loop_forever()
+    else:
+        print("Config file is required.")
 
 if __name__ == "__main__":
     main()
