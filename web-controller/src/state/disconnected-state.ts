@@ -1,3 +1,4 @@
+import type { Application } from "../application.js";
 import type { ApplicationUI } from "../application-ui.js";
 import type { ApplicationState } from "./application-state.js";
 
@@ -32,7 +33,7 @@ export class DisconnectedState implements ApplicationState {
     private connectionDetailsForm: HTMLFormElement | undefined = undefined;
     private connectionErrorEl: HTMLElement | undefined = undefined;
 
-    onEnter(applicationUI: ApplicationUI): void {
+    onEnter(application: Application, applicationUI: ApplicationUI): void {
         this.connectionDetailsForm = applicationUI.getApplicationElement<HTMLFormElement>("connection-form");
         this.connectionDetailsForm?.addEventListener("submit", this.onConnectionFormSubmit.bind(this));
 
@@ -42,7 +43,7 @@ export class DisconnectedState implements ApplicationState {
         applicationUI.showDiv("disconnected-state");
     }
 
-    onExit(applicationUI: ApplicationUI): void {
+    onExit(application: Application, applicationUI: ApplicationUI): void {
         this.connectionDetailsForm?.removeEventListener("submit", this.onConnectionFormSubmit.bind(this));
         this.connectionDetailsForm = undefined;
         this.connectionErrorEl = undefined;

@@ -2,6 +2,8 @@ import type { ApplicationState } from "./state/application-state.js";
 
 import { ApplicationUI } from "./application-ui.js";
 import { DisconnectedState } from "./state/disconnected-state.js";
+import { GamepadUI } from "./gamepad-ui.js";
+import { RobotInput } from "./robot-input.js";
 
 /**
  * The application class is the main entry point to the controller application.
@@ -13,7 +15,11 @@ import { DisconnectedState } from "./state/disconnected-state.js";
  */
 export class Application {
 
+    public readonly robotInput = new RobotInput();
+
     private applicationUI = new ApplicationUI();
+    private gamepadUI = new GamepadUI(this.robotInput, this.applicationUI);
+
     private applicationState: ApplicationState;
 
     constructor() {
@@ -22,10 +28,12 @@ export class Application {
         window.addEventListener("application-state-change", ((ev: CustomEvent<ApplicationState>) => {
             this.setState(ev.detail);
         }) as EventListener);
+
+        this.robotInput.setOnInputHandler((x, y) => console.log(`Updating input: (${x}, ${y})`));
     }
 
     start() {
-        this.applicationState.onEnter(this.applicationUI);
+        this.applicationState.onEnter(this, this.applicationUI);
     }
 
     /**
@@ -35,8 +43,8 @@ export class Application {
      * @param newState The new state to enter.
      */
     setState(newState: ApplicationState) {
-        this.applicationState.onExit(this.applicationUI);
+        this.applicationState.onExit(this, this.applicationUI);
         this.applicationState = newState;
-        this.applicationState.onEnter(this.applicationUI);
+        this.applicationState.onEnter(this, this.applicationUI);
     }
 }

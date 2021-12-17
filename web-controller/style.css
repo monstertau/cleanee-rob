@@ -9,6 +9,28 @@ body {
     background-color: #ececec;
 }
 
+.status-bar {
+    background: white;
+    border-bottom: 1px solid #eee;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.4);
+    overflow: auto;
+    padding: 20px;
+    margin-bottom: 20px;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#gamepad-ui {
+    display: flex;
+    align-items: center;
+}
+
+#check-gamepads {
+    margin-right: 15px;
+}
+
 .form-group {
     display: flex;
     flex-wrap: wrap;

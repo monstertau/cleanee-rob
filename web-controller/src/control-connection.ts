@@ -29,18 +29,19 @@ export interface ControlStateListener {
 type MoveCommand = {
     command: "move",
     metadata: {
-        magnitude: number
+        x: number,
+        y: number
     }
 };
 
-type RotateCommand = {
-    command: "rotate",
-    metadata: {
-        magnitude: number
-    }
-};
+// type RotateCommand = {
+//     command: "rotate",
+//     metadata: {
+//         magnitude: number
+//     }
+// };
 
-type RobotCommand = MoveCommand | RotateCommand;
+type RobotCommand = MoveCommand;
 
 /**
  * The ControlConnection class encapsulates the operations that can be performed
@@ -52,7 +53,7 @@ type RobotCommand = MoveCommand | RotateCommand;
  */
 export class ControlConnection {
 
-    private static readonly MQTTTopic = "ev3-robot";
+    private static readonly MQTTTopic = "topic/control";
 
     private readonly client: Paho.MQTT.Client;
 
@@ -104,28 +105,28 @@ export class ControlConnection {
      * @param magnitude The new magnitude of the movement the robot should
      *                  execute.
      */
-    updateMovement(magnitude: number): void {
+    updateMovement(x: number, y: number): void {
         // Don't update the state if the magnitude matches already.
-        if (this.movementMagnitude === magnitude) {
-            return;
-        }
+        // if (this.movementMagnitude === magnitude) {
+        //     return;
+        // }
 
-        this.verifyMagnitude(magnitude);
+        // this.verifyMagnitude(magnitude);
 
-        this.movementMagnitude = magnitude;
+        // this.movementMagnitude = magnitude;
         this.send({
             command: "move",
             metadata: {
-                magnitude
+                x, y
             }
         });
 
         // No concurrent steering and moving.
-        if (this.movementMagnitude !== 0) {
-            this.rotationMagnitude = 0;
-        }
+        // if (this.movementMagnitude !== 0) {
+        //     this.rotationMagnitude = 0;
+        // }
 
-        this.updateControlStateListener();
+        // this.updateControlStateListener();
     }
 
     /**
@@ -134,29 +135,29 @@ export class ControlConnection {
      * @param magnitude The new magnitude of the rotation the robot should
      *                  execute.
      */
-    updateRotation(magnitude: number): void {
-        // Don't update the state if the magnitude matches already.
-        if (this.rotationMagnitude === magnitude) {
-            return;
-        }
+    // updateRotation(magnitude: number): void {
+    //     // Don't update the state if the magnitude matches already.
+    //     if (this.rotationMagnitude === magnitude) {
+    //         return;
+    //     }
 
-        this.verifyMagnitude(magnitude);
+    //     this.verifyMagnitude(magnitude);
 
-        this.rotationMagnitude = magnitude;
-        this.send({
-            command: "rotate",
-            metadata: {
-                magnitude
-            }
-        });
+    //     this.rotationMagnitude = magnitude;
+    //     this.send({
+    //         command: "rotate",
+    //         metadata: {
+    //             magnitude
+    //         }
+    //     });
 
-        // No concurrent steering and moving.
-        if (this.rotationMagnitude !== 0) {
-            this.movementMagnitude = 0;
-        }
+    //     // No concurrent steering and moving.
+    //     if (this.rotationMagnitude !== 0) {
+    //         this.movementMagnitude = 0;
+    //     }
 
-        this.updateControlStateListener();
-    }
+    //     this.updateControlStateListener();
+    // }
 
     private verifyMagnitude(magnitude: number): void {
         if (magnitude < -1 || magnitude > 1) {

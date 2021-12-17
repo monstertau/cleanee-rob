@@ -1,4 +1,5 @@
-import { ApplicationUI } from "../application-ui.js";
+import type { ApplicationUI } from "../application-ui.js";
+import type { Application } from "../application.js";
 
 /**
  * An interface that describes an application state. It exposes lifecycle
@@ -10,12 +11,12 @@ export interface ApplicationState {
      *
      * @param applicationUI An application UI instance.
      */
-    onEnter(applicationUI: ApplicationUI): void;
+    onEnter(application: Application, applicationUI: ApplicationUI): void;
 
     /**
      * Called when the state is exited.
      *
      * @param applicationUI An application UI instance.
      */
-    onExit(applicationUI: ApplicationUI): void;
+    onExit(application: Application, applicationUI: ApplicationUI): void;
 }

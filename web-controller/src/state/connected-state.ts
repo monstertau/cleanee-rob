@@ -1,3 +1,4 @@
+import type { Application } from "../application.js";
 import type { ApplicationUI } from "../application-ui.js";
 import type { ControlStateListener, ControlConnection, ControlState } from "../control-connection.js";
 
@@ -21,7 +22,7 @@ export class ConnectedState implements ApplicationState, ControlStateListener {
         controlConnection.setControlStateListener(this);
     }
 
-    onEnter(applicationUI: ApplicationUI): void {
+    onEnter(application: Application, applicationUI: ApplicationUI): void {
         applicationUI.showDiv("connected-state");
         applicationUI.getApplicationElement<HTMLImageElement>("camera-feed")
             .src = `http://${this.camHost}/video`;
@@ -30,12 +31,14 @@ export class ConnectedState implements ApplicationState, ControlStateListener {
 
         this.movementStates = this.getMovementStateElements(applicationUI);
 
-        this.setupKeyboardListener();
+        application.robotInput.setOnInputHandler((x, y) => {
+            this.controlConnection.updateMovement(x, y)
+        });
     }
 
-    onExit(applicationUI: ApplicationUI): void {
+    onExit(application: Application, applicationUI: ApplicationUI): void {
         this.movementStates = [];
-        this.removeKeyboardListener();
+        application.robotInput.clearOnInputHandler();
     }
 
     onControlStateChange(newState: ControlState): void {
@@ -55,56 +58,6 @@ export class ConnectedState implements ApplicationState, ControlStateListener {
         };
 
         newState.activeDirections.forEach(activateMovementState);
-    }
-
-    private onKeyDown(e: KeyboardEvent) {
-        switch (e.code) {
-            case 'KeyW':
-                this.controlConnection.updateMovement(1);
-                break;
-
-            case 'KeyS':
-                this.controlConnection.updateMovement(-1);
-                break;
-
-            case 'KeyA':
-                this.controlConnection.updateRotation(-1);
-                break;
-
-            case 'KeyD':
-                this.controlConnection.updateRotation(1);
-                break;
-        }
-    }
-
-    private onKeyUp(e: KeyboardEvent) {
-        switch (e.code) {
-            case 'KeyW':
-                this.controlConnection.updateMovement(0);
-                break;
-
-            case 'KeyS':
-                this.controlConnection.updateMovement(0);
-                break;
-
-            case 'KeyA':
-                this.controlConnection.updateRotation(0);
-                break;
-
-            case 'KeyD':
-                this.controlConnection.updateRotation(0);
-                break;
-        }
-    }
-
-    private setupKeyboardListener() {
-        window.addEventListener("keydown", this.onKeyDown.bind(this));
-        window.addEventListener("keyup", this.onKeyUp.bind(this));
-    }
-
-    private removeKeyboardListener() {
-        window.removeEventListener("keydown", this.onKeyDown.bind(this));
-        window.removeEventListener("keyup", this.onKeyUp.bind(this));
     }
 
     private getMovementStateElements(applicationUI: ApplicationUI): Element[] {
