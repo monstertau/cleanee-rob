@@ -24,7 +24,7 @@ class GamepadInput extends RobotInputBase {
     /**
      * The number of decimals for precision.
      */
-    private static PRECISION = 2;
+    private static PRECISION = 1;
 
     /**
      * Which axes on the gamepad control the robot.
@@ -62,7 +62,10 @@ class GamepadInput extends RobotInputBase {
         this.checkConnected();
 
         const x_axis = this.round(this.gamepad.axes[GamepadInput.X_AXIS]);
-        const y_axis = this.round(this.gamepad.axes[GamepadInput.Y_AXIS]);
+
+        // For the robot, positive y is forward, whereas on the controller, moving
+        // the thumbstick up gives a negative y.
+        const y_axis = -this.round(this.gamepad.axes[GamepadInput.Y_AXIS]);
 
         if (x_axis === this.lastPolledXAxisValue && y_axis === this.lastPolledYAxisValue) {
             return;

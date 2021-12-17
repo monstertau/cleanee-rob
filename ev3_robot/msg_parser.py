@@ -11,17 +11,16 @@ class CommandFactory:
         self.command_dict = json.loads(msg)
         cmd = self.command_dict.get("command", "")
         metadata = self.command_dict.get("metadata", {})
-        if cmd == "move_coord":
-            return MoveCoordCommand(cmd_type, cmd, metadata)
+        if cmd == "move":
+            return MoveCoordCommand(cmd, metadata)
         elif cmd == "stop":
-            return StopCommand(cmd_type, cmd, metadata)
+            return StopCommand(cmd, metadata)
         else:
             raise Exception("Unknown Command")
 
 
 class Command:
-    def __init__(self, cmd_type, command, metadata):
-        self.cmd_type = cmd_type
+    def __init__(self, command, metadata):
         self.command = command
         self.metadata = metadata
 
@@ -35,8 +34,8 @@ class Command:
 
 
 class StopCommand(Command):
-    def __init__(self, cmd_type: str, command: str, metadata: dict):
-        super().__init__(cmd_type, command, metadata)
+    def __init__(self, command: str, metadata: dict):
+        super().__init__(command, metadata)
 
     def execute(self, robot: Robot):
         robot.stop()
@@ -46,8 +45,8 @@ class StopCommand(Command):
 
 
 class MoveCoordCommand(Command):
-    def __init__(self, cmd_type: str, command: str, metadata: dict):
-        super().__init__(cmd_type, command, metadata)
+    def __init__(self, command: str, metadata: dict):
+        super().__init__(command, metadata)
         self.x = metadata.get("x", 0)
         self.y = metadata.get("y", 0)
 

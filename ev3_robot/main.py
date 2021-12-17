@@ -7,7 +7,7 @@ from ev3dev2.sensor import *
 from ev3dev2.sensor.lego import *
 from robot import Robot
 
-MQTT_HOST="192.168.137.1"
+MQTT_HOST="192.168.44.168"
 MQTT_PORT=1883
 KEEP_ALIVE=60
 TOPIC_CONNECT="topic/connect"
@@ -35,7 +35,7 @@ configs = {}
 
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code " + str(rc))
-    client.subscribe("test")
+    client.subscribe(TOPIC_CONTROL)
 
 
 def on_message(client, userdata, msg):

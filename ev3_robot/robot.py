@@ -18,14 +18,14 @@ class Robot:
         speed = math.sqrt(y ** 2 + x ** 2)
         steering = 1 - 2 * abs(math.atan2(y, x) / math.pi)
         if steering > 0:
-            self.left_motor.speed_sp = speed * 400
-            self.right_motor.speed_sp = speed * 400 * (1 - int(steering) * 2)
+            self.left_motor.speed_sp = speed * self.left_motor.max_speed
+            self.right_motor.speed_sp = speed * self.right_motor.max_speed * (1 - int(steering) * 2)
             self.run()
         elif steering == 0 and y < 0:
-            self.left_motor.speed_sp = speed * 400 * -1
-            self.right_motor.speed_sp = speed * 400 * -1
+            self.left_motor.speed_sp = speed * self.left_motor.max_speed * -1
+            self.right_motor.speed_sp = speed * self.right_motor.max_speed * -1
             self.run()
         else:
-            self.left_motor.speed_sp = speed * 400 * (1 + int(steering) * 2)
-            self.right_motor.speed_sp = speed * 400
+            self.left_motor.speed_sp = speed * self.left_motor.max_speed * (1 + int(steering) * 2)
+            self.right_motor.speed_sp = speed * self.right_motor.max_speed
             self.run()

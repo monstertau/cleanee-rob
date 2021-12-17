@@ -34,13 +34,6 @@ type MoveCommand = {
     }
 };
 
-// type RotateCommand = {
-//     command: "rotate",
-//     metadata: {
-//         magnitude: number
-//     }
-// };
-
 type RobotCommand = MoveCommand;
 
 /**
@@ -214,8 +207,6 @@ export class ControlConnection {
     }
 
     private onMessageDelivered(message: Paho.MQTT.Message) {
-        console.log('message delivered');
-        console.log(message);
     }
 
     private enterDisconnectedState(): void {
