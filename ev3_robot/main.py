@@ -1,17 +1,23 @@
 # Import the necessary libraries
 import paho.mqtt.client as mqtt
 from msg_parser import CommandFactory
-import yaml
-import time
-import math
 from ev3dev2.motor import *
 from ev3dev2.sound import Sound
 from ev3dev2.sensor import *
 from ev3dev2.sensor.lego import *
 from robot import Robot
+
+MQTT_HOST="192.168.137.1"
+MQTT_PORT=1883
+KEEP_ALIVE=60
+TOPIC_CONNECT="topic/connect"
+TOPIC_CONTROL="topic/control"
+
+print("Connecting to motors...")
+
 # Create the sensors and motors objects
 motorA = LargeMotor(OUTPUT_A)
-motorB = LargeMotor(OUTPUT_B)
+motorB = LargeMotor(OUTPUT_C)
 
 # tank_drive = MoveTank(OUTPUT_A, OUTPUT_B)
 # steering_drive = MoveSteering(OUTPUT_A, OUTPUT_B)
@@ -39,24 +45,19 @@ def on_message(client, userdata, msg):
     except Exception as e:
         print(e)
 
-with open('config.yml') as f:
-    configs = yaml.load(f, Loader=yaml.FullLoader)
-
 def main():
-    mqttConf = configs.get("mqtt_server")
-    if mqttConf is not None:
-        host = mqttConf.get("host", "localhost")
-        port = mqttConf.get("port", 1883)
-        keep_alive = mqttConf.get("keep_alive", 60)
-        client = mqtt.Client()
-        client.connect(host, port, keep_alive)
+    host = MQTT_HOST
+    port = MQTT_PORT
+    keep_alive = KEEP_ALIVE
+    client = mqtt.Client()
 
-        client.on_connect = on_connect
-        client.on_message = on_message
+    print("Connecting to mqtt client...")
+    client.connect(host, port, keep_alive)
 
-        client.loop_forever()
-    else:
-        print("Config file is required.")
+    client.on_connect = on_connect
+    client.on_message = on_message
+
+    client.loop_forever()
 
 if __name__ == "__main__":
     main()

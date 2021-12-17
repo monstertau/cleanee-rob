@@ -1,5 +1,5 @@
 mqtt_server:
-  host: 192.168.2.108
+  host: 192.168.44.168
   port: 1883
   keep_alive: 60
   topic_connect: topic/connect

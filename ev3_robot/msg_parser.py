@@ -9,12 +9,11 @@ class CommandFactory:
 
     def get_command(self, msg):
         self.command_dict = json.loads(msg)
-        cmd_type = self.command_dict.get("type", "")
         cmd = self.command_dict.get("command", "")
         metadata = self.command_dict.get("metadata", {})
-        if cmd_type == "car" and cmd == "move_coord":
+        if cmd == "move_coord":
             return MoveCoordCommand(cmd_type, cmd, metadata)
-        elif cmd_type == "car" and cmd == "stop":
+        elif cmd == "stop":
             return StopCommand(cmd_type, cmd, metadata)
         else:
             raise Exception("Unknown Command")
