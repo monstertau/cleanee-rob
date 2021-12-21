@@ -11,16 +11,22 @@ class CommandFactory:
         self.command_dict = json.loads(msg)
         cmd = self.command_dict.get("command", "")
         metadata = self.command_dict.get("metadata", {})
-        if cmd == "move":
+        if cmd == "move_coord":
             return MoveCoordCommand(cmd, metadata)
         elif cmd == "stop":
-            return StopCommand(cmd, metadata)
+            return StopCarCommand(cmd, metadata)
+        elif cmd == "arm_in":
+            return ArmInCommand(cmd, metadata)
+        elif cmd == "arm_out":
+            return ArmOutCommand(cmd, metadata)
+        elif cmd == "arm_stop":
+            return ArmStopCommand(cmd, metadata)
         else:
             raise Exception("Unknown Command")
 
 
 class Command:
-    def __init__(self, command, metadata):
+    def __init__(self,  command, metadata):
         self.command = command
         self.metadata = metadata
 
@@ -33,8 +39,8 @@ class Command:
         pass
 
 
-class StopCommand(Command):
-    def __init__(self, command: str, metadata: dict):
+class StopCarCommand(Command):
+    def __init__(self,  command: str, metadata: dict):
         super().__init__(command, metadata)
 
     def execute(self, robot: Robot):
@@ -55,3 +61,44 @@ class MoveCoordCommand(Command):
 
     def to_string(self):
         return "MoveCoordCommand"
+
+
+class ArmInCommand(Command):
+    def __init__(self, command: str, metadata: dict):
+        super().__init__(command, metadata)
+        self.speed_sp = metadata.get("speed", 0)
+
+    def execute(self, robot: Robot):
+        if self.speed_sp != 0:
+            robot.arm_in(speed_sp)
+        else:
+            robot.arm_in()
+
+    def to_string(self):
+        return "ArmInCommand"
+
+
+class ArmOutCommand(Command):
+    def __init__(self, command: str, metadata: dict):
+        super().__init__(command, metadata)
+        self.speed_sp = metadata.get("speed", 0)
+
+    def execute(self, robot: Robot):
+        if self.speed_sp != 0:
+            robot.arm_out(speed_sp)
+        else:
+            robot.arm_out()
+
+    def to_string(self):
+        return "ArmOutCommand"
+
+
+class ArmStopCommand(Command):
+    def __init__(self, command: str, metadata: dict):
+        super().__init__(command, metadata)
+
+    def execute(self, robot: Robot):
+        robot.arm_stop()
+
+    def to_string(self):
+        return "ArmStopCommand"
