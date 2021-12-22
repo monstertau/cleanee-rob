@@ -1,10 +1,10 @@
-mqtt_server:
-  host: 192.168.2.108
-  port: 1883
-  keep_alive: 60
-  topic_connect: topic/connect
-  topic_control: topic/control
+mqtt_server: # mqtt server config
+  host: 192.168.2.108 # your MQTT Broker Server IP, default is your PC's LAN IP
+  port: 1883  # your MQTT Broker Server Port, default is 1883 
+  keep_alive: 60 ## max alive of mqtt topic connect session
+  topic_connect: topic/connect # connect to robot topic
+  topic_control: topic/control # control robot topic
 robot:
-  left_motor: outA
-  right_motor: outD
-  rotate_motor: outC
+  left_motor: outA # left motor port connect
+  right_motor: outD # right motor port connect
+  rotate_motor: outC # rotate motor port connect
