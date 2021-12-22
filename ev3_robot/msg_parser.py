@@ -21,6 +21,12 @@ class CommandFactory:
             return ArmOutCommand(cmd, metadata)
         elif cmd == "arm_stop":
             return ArmStopCommand(cmd, metadata)
+        elif cmd == "arm_grab":
+            return ArmGrabCommand(cmd, metadata)
+        elif cmd == "arm_reset_position":
+            return ArmResetPositionCommand(cmd, metadata)
+        elif cmd == "arm_set_position":
+            return ArmSetPositionCommand(cmd, metadata)
         else:
             raise Exception("Unknown Command")
 
@@ -102,3 +108,34 @@ class ArmStopCommand(Command):
 
     def to_string(self):
         return "ArmStopCommand"
+
+
+class ArmGrabCommand(Command):
+    def __init__(self, command: str, metadata: dict):
+        super().__init__(command, metadata)
+
+    def execute(self, robot: Robot):
+        robot.arm_grab()
+
+    def to_string(self):
+        return "ArmGrabCommand"
+
+class ArmResetPositionCommand(Command):
+    def __init__(self, command: str, metadata: dict):
+        super().__init__(command, metadata)
+
+    def execute(self, robot: Robot):
+        robot.arm_reset_position()
+
+    def to_string(self):
+        return "ArmResetCommand"
+
+class ArmSetPositionCommand(Command):
+    def __init__(self, command: str, metadata: dict):
+        super().__init__(command, metadata)
+
+    def execute(self, robot: Robot):
+        robot.arm_set_position()
+
+    def to_string(self):
+        return "ArmSetPositionCommand"
