@@ -29,7 +29,7 @@ export class Application {
             this.setState(ev.detail);
         }) as EventListener);
 
-        this.robotInput.setOnInputHandler((x, y) => console.log(`Updating input: (${x}, ${y})`));
+        this.robotInput.setOnMovementHandler((x, y) => console.log(`Updating input: (${x}, ${y})`));
     }
 
     start() {

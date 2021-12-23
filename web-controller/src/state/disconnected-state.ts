@@ -124,7 +124,7 @@ export class DisconnectedState implements ApplicationState {
 
     private verifyCamIp(camHost: Host): Promise<ConnectionResult> {
         return new Promise((resolve, reject) => {
-            const feed = `http://${camHost}/video`;
+            const feed = `http://${camHost}/jpeg`;
             fetch(feed)
                 .then(response => {
                     if (response.status == 200) {

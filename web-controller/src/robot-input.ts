@@ -1,14 +1,34 @@
-type OnInput = (x: number, y: number) => void;
+type OnMovement = (x: number, y: number) => void;
+
+export enum ArmAction {
+    IN,
+    OUT,
+    GRAB,
+    RESET,
+    SAVE,
+    STOP
+}
+
+type OnArmAction = (action: ArmAction) => void;
 
 abstract class RobotInputBase {
-    protected onInput: OnInput | undefined = undefined;
 
-    setOnInputHandler(handler: OnInput) {
-        this.onInput = handler;
+    private static readonly NOOP_HANDLER = () => {};
+
+    protected onMovement: OnMovement = RobotInputBase.NOOP_HANDLER;
+    protected onArmAction: OnArmAction = RobotInputBase.NOOP_HANDLER;
+
+    setOnMovementHandler(handler: OnMovement) {
+        this.onMovement = handler;
     }
 
-    clearOnInputHandler() {
-        this.onInput = undefined;
+    setOnArmActionHandler(handler: OnArmAction) {
+        this.onArmAction = handler;
+    }
+
+    clearHandlers() {
+        this.onMovement = RobotInputBase.NOOP_HANDLER;
+        this.onArmAction = RobotInputBase.NOOP_HANDLER;
     }
 }
 
@@ -74,8 +94,8 @@ class GamepadInput extends RobotInputBase {
         this.lastPolledXAxisValue = x_axis;
         this.lastPolledYAxisValue = y_axis;
 
-        if (this.onInput) {
-            this.onInput(x_axis, y_axis);
+        if (this.onMovement) {
+            this.onMovement(x_axis, y_axis);
         }
     }
 
@@ -113,49 +133,66 @@ class KeyboardInput extends RobotInputBase {
     }
 
     private onKeyDown(e: KeyboardEvent) {
-        if (!this.onInput) {
-            return;
-        }
-
         switch (e.code) {
             case 'KeyW':
-                this.onInput(0, 1);
+                this.onMovement(0, 1);
                 break;
 
             case 'KeyS':
-                this.onInput(0, -1);
+                this.onMovement(0, -1);
                 break;
 
             case 'KeyA':
-                this.onInput(-1, 0);
+                this.onMovement(-1, 0);
                 break;
 
             case 'KeyD':
-                this.onInput(1, 0);
+                this.onMovement(1, 0);
+                break;
+
+            case 'KeyR':
+                this.onArmAction(ArmAction.RESET);
+                break;
+
+            case 'KeyF':
+                this.onArmAction(ArmAction.SAVE);
+                break;
+
+            case 'KeyQ':
+                this.onArmAction(ArmAction.OUT);
+                break;
+
+            case 'KeyE':
+                this.onArmAction(ArmAction.IN);
+                break;
+
+            case 'KeyX':
+                this.onArmAction(ArmAction.GRAB);
                 break;
         }
     }
 
     private onKeyUp(e: KeyboardEvent) {
-        if (!this.onInput) {
-            return;
-        }
-
         switch (e.code) {
             case 'KeyW':
-                this.onInput(0, 0);
+                this.onMovement(0, 0);
                 break;
 
             case 'KeyS':
-                this.onInput(0, 0);
+                this.onMovement(0, 0);
                 break;
 
             case 'KeyA':
-                this.onInput(0, 0);
+                this.onMovement(0, 0);
                 break;
 
             case 'KeyD':
-                this.onInput(0, 0);
+                this.onMovement(0, 0);
+                break;
+
+            case 'KeyQ':
+            case 'KeyE':
+                this.onArmAction(ArmAction.STOP);
                 break;
         }
     }
@@ -168,24 +205,26 @@ export class RobotInput extends RobotInputBase {
 
     constructor() {
         super();
+    }
 
-        this.keyboardInput.setOnInputHandler((x, y) => {
-            if (this.onInput) {
-                this.onInput(x, y);
-            }
-        });
+    setOnMovementHandler(handler: OnMovement) {
+        this.keyboardInput.setOnMovementHandler(handler);
+    }
+
+    setOnArmActionHandler(handler: OnArmAction) {
+        this.keyboardInput.setOnArmActionHandler(handler);
     }
 
     clearGamepadInput() {
-        this.gamepadInput?.clearOnInputHandler();
+        this.gamepadInput?.clearHandlers();
         this.gamepadInput = undefined;
     }
 
     setGamepad(gamepad: Gamepad) {
         this.gamepadInput = new GamepadInput(gamepad);
-        this.gamepadInput.setOnInputHandler((x, y) => {
-            if (this.onInput) {
-                this.onInput(x, y);
+        this.gamepadInput.setOnMovementHandler((x, y) => {
+            if (this.onMovement) {
+                this.onMovement(x, y);
             }
         });
     }

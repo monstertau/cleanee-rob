@@ -1,5 +1,6 @@
 /// <reference path="../node_modules/@types/paho-mqtt/index.d.ts" />
 
+import { ArmAction } from "./robot-input.js";
 import { DisconnectedState } from "./state/disconnected-state.js";
 
 export enum Direction {
@@ -9,6 +10,12 @@ export enum Direction {
     RIGHT = "right"
 }
 
+export enum ArmMovement {
+    UP = "up",
+    DOWN = "down",
+    NONE = "none"
+}
+
 /**
  * The control state is a representation of the actions the robot is executing.
  * Since we communicate with the robot through messages, this state is
@@ -16,6 +23,7 @@ export enum Direction {
  */
 export interface ControlState {
     activeDirections: Set<Direction>;
+    armMovement: ArmMovement;
 }
 
 /**
@@ -34,7 +42,33 @@ type MoveCommand = {
     }
 };
 
-type RobotCommand = MoveCommand;
+type ArmInCommand = {
+    command: "arm_in"
+};
+
+type ArmOutCommand = {
+    command: "arm_out"
+};
+
+type ArmResetPositionCommand = {
+    command: "arm_reset_position"
+};
+
+type ArmSavePositionCommand = {
+    command: "arm_set_position"
+};
+
+type ArmStopCommand = {
+    command: "arm_stop"
+};
+
+type RobotCommand =
+    | MoveCommand
+    | ArmInCommand
+    | ArmOutCommand
+    | ArmResetPositionCommand
+    | ArmSavePositionCommand
+    | ArmStopCommand;
 
 /**
  * The ControlConnection class encapsulates the operations that can be performed
@@ -50,8 +84,9 @@ export class ControlConnection {
 
     private readonly client: Paho.MQTT.Client;
 
-    private movementMagnitude: number = 0;
-    private rotationMagnitude: number = 0;
+    private movement = { x: 0, y: 0 };
+    private lastArmAction: ArmAction | null = null;
+    private armMovement = ArmMovement.NONE;
 
     private controlStateListener: ControlStateListener | undefined = undefined;
 
@@ -94,17 +129,15 @@ export class ControlConnection {
 
     /**
      * Update the movement of the robot with a new magnitude.
-     *
-     * @param magnitude The new magnitude of the movement the robot should
-     *                  execute.
      */
     updateMovement(x: number, y: number): void {
-        // Don't update the state if the magnitude matches already.
-        // if (this.movementMagnitude === magnitude) {
-        //     return;
-        // }
+        // Don't update the state if the movement matches already.
+        if (this.movement.x === x && this.movement.y === y) {
+            return;
+        }
 
-        // this.verifyMagnitude(magnitude);
+        this.verifyAxis(x);
+        this.verifyAxis(y);
 
         // this.movementMagnitude = magnitude;
         this.send({
@@ -114,47 +147,52 @@ export class ControlConnection {
             }
         });
 
-        // No concurrent steering and moving.
-        // if (this.movementMagnitude !== 0) {
-        //     this.rotationMagnitude = 0;
-        // }
+        this.movement.x = x;
+        this.movement.y = y;
 
-        // this.updateControlStateListener();
+        this.updateControlStateListener();
     }
 
-    /**
-     * Update the rotation of the robot with a new magnitude.
-     *
-     * @param magnitude The new magnitude of the rotation the robot should
-     *                  execute.
-     */
-    // updateRotation(magnitude: number): void {
-    //     // Don't update the state if the magnitude matches already.
-    //     if (this.rotationMagnitude === magnitude) {
-    //         return;
-    //     }
+    dispatchArmAction(action: ArmAction) {
+        if (this.lastArmAction === action) {
+            return;
+        }
 
-    //     this.verifyMagnitude(magnitude);
+        this.lastArmAction = action;
 
-    //     this.rotationMagnitude = magnitude;
-    //     this.send({
-    //         command: "rotate",
-    //         metadata: {
-    //             magnitude
-    //         }
-    //     });
+        switch (action) {
+            case ArmAction.STOP:
+                this.send({ command: "arm_stop" });
+                this.armMovement = ArmMovement.NONE;
+                break;
 
-    //     // No concurrent steering and moving.
-    //     if (this.rotationMagnitude !== 0) {
-    //         this.movementMagnitude = 0;
-    //     }
+            case ArmAction.IN:
+                this.send({ command: "arm_in" });
+                this.armMovement = ArmMovement.UP;
+                break;
 
-    //     this.updateControlStateListener();
-    // }
+            case ArmAction.OUT:
+                this.send({ command: "arm_out" });
+                this.armMovement = ArmMovement.DOWN;
+                break;
 
-    private verifyMagnitude(magnitude: number): void {
-        if (magnitude < -1 || magnitude > 1) {
-            throw new Error(`The magnitude value must be in range [-1, 1]. ${magnitude} given.`);
+            case ArmAction.RESET:
+                this.send({ command: "arm_reset_position" });
+                this.armMovement = ArmMovement.NONE;
+                break;
+
+            case ArmAction.SAVE:
+                this.send({ command: "arm_set_position" });
+                this.armMovement = ArmMovement.NONE;
+                break;
+        }
+
+        this.updateControlStateListener();
+    }
+
+    private verifyAxis(axis: number): void {
+        if (axis < -1 || axis > 1) {
+            throw new Error(`The axis value must be in range [-1, 1]. ${axis} given.`);
         }
     }
 
@@ -173,20 +211,21 @@ export class ControlConnection {
         }
 
         const directions: Set<Direction> = new Set();
-        if (this.movementMagnitude !== 0) {
+        if (this.movement.y !== 0) {
             directions.add(
-                this.movementMagnitude > 0 ? Direction.FORWARD : Direction.BACKWARD
+                this.movement.y > 0 ? Direction.FORWARD : Direction.BACKWARD
             );
         }
 
-        if (this.rotationMagnitude !== 0) {
+        if (this.movement.x !== 0) {
             directions.add(
-                this.rotationMagnitude > 0 ? Direction.RIGHT : Direction.LEFT
+                this.movement.x > 0 ? Direction.RIGHT : Direction.LEFT
             );
         }
 
         this.controlStateListener.onControlStateChange({
-            activeDirections: directions
+            activeDirections: directions,
+            armMovement: this.armMovement
         });
     }
 

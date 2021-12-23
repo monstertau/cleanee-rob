@@ -131,3 +131,42 @@ body {
     left: 51px;
     top: 51px;
 }
+
+.input-state {
+    display: flex;
+}
+
+.input-state > div:not(:last-child) {
+    margin-right: 25px;
+}
+
+.arm-states {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.arm-state {
+    border-width: 25px;
+    border-style: solid;
+    border-color: transparent;
+
+    background: white;
+    width: 0;
+    height: 0;
+
+    --arrow-color: rgba(255, 0, 0, 0.3)
+}
+
+.arm-state.active {
+    --arrow-color: red;
+}
+
+#arm-state-up {
+    border-bottom-color: var(--arrow-color);
+    margin-bottom: 20px;
+}
+
+#arm-state-down {
+    border-top-color: var(--arrow-color);
+}

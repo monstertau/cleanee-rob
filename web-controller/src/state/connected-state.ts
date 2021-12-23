@@ -1,9 +1,10 @@
 import type { Application } from "../application.js";
 import type { ApplicationUI } from "../application-ui.js";
 import type { ControlStateListener, ControlConnection, ControlState } from "../control-connection.js";
+import type { Host } from "../lib.js";
 
+import { ArmAction } from "../robot-input.js";
 import { Direction } from "../control-connection.js";
-import { Host } from "../lib";
 import { ApplicationState } from "./application-state";
 
 /**
@@ -14,6 +15,7 @@ import { ApplicationState } from "./application-state";
 export class ConnectedState implements ApplicationState, ControlStateListener {
 
     private movementStates: Element[] = [];
+    private armStates: Element[] = [];
 
     constructor(
         private camHost: Host,
@@ -24,21 +26,28 @@ export class ConnectedState implements ApplicationState, ControlStateListener {
 
     onEnter(application: Application, applicationUI: ApplicationUI): void {
         applicationUI.showDiv("connected-state");
+
         applicationUI.getApplicationElement<HTMLImageElement>("camera-feed")
-            .src = `http://${this.camHost}/video`;
+            .src = `http://${this.camHost}/mjpeg`;
 
         applicationUI.connectionStatus.textContent = "Connected";
 
         this.movementStates = this.getMovementStateElements(applicationUI);
+        this.armStates = this.getArmStateElements(applicationUI);
 
-        application.robotInput.setOnInputHandler((x, y) => {
+        application.robotInput.setOnMovementHandler((x, y) => {
             this.controlConnection.updateMovement(x, y)
+        });
+
+        application.robotInput.setOnArmActionHandler(action => {
+            this.controlConnection.dispatchArmAction(action);
         });
     }
 
     onExit(application: Application, applicationUI: ApplicationUI): void {
         this.movementStates = [];
-        application.robotInput.clearOnInputHandler();
+        this.armStates = [];
+        application.robotInput.clearHandlers();
     }
 
     onControlStateChange(newState: ControlState): void {
@@ -46,7 +55,7 @@ export class ConnectedState implements ApplicationState, ControlStateListener {
             return;
         }
 
-        this.movementStates.forEach(el => {
+        [...this.movementStates, ...this.armStates].forEach(el => {
             el.classList.remove("active");
         });
 
@@ -58,10 +67,28 @@ export class ConnectedState implements ApplicationState, ControlStateListener {
         };
 
         newState.activeDirections.forEach(activateMovementState);
+
+        const armStateEl = this.armStates.find(el => el.id === `arm-state-${newState.armMovement}`);
+        if (armStateEl) {
+            armStateEl.classList.add("active");
+        }
     }
 
     private getMovementStateElements(applicationUI: ApplicationUI): Element[] {
         const containerEl = applicationUI.getApplicationElement("movement-states");
         return Array.from(containerEl.children);
+    }
+
+    private getArmStateElements(applicationUI: ApplicationUI): Element[] {
+        const containerEl = applicationUI.getApplicationElement("arm-states");
+        return Array.from(containerEl.children);
+    }
+
+    private setVideoSource(element: HTMLElement, source: string) {
+        const sourceEl = document.createElement("source");
+        sourceEl.src = source;
+        sourceEl.type = "application/x-mpegURL";
+
+        element.appendChild(sourceEl);
     }
 }
