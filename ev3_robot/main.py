@@ -19,17 +19,18 @@ print("Connecting to motors...")
 motorA = LargeMotor(OUTPUT_A)
 motorD = LargeMotor(OUTPUT_D)
 motorC = MediumMotor(OUTPUT_C)
+ultrasonic_sensor = UltrasonicSensor(INPUT_1)
 # tank_drive = MoveTank(OUTPUT_A, OUTPUT_B)
 # steering_drive = MoveSteering(OUTPUT_A, OUTPUT_B)
 
-# spkr = Sound()
+spkr = Sound()
 
 # # color_sensor_in1 = ColorSensor(INPUT_1)
 # # ultrasonic_sensor_in2 = UltrasonicSensor(INPUT_2)
 # # gyro_sensor_in3 = GyroSensor(INPUT_3)
 # # gps_sensor_in4 = GPSSensor(INPUT_4)
 # # pen_in5 = Pen(INPUT_5)
-robot = Robot(motorA, motorD, motorC)
+robot = Robot(motorA, motorD, motorC, ultrasonic_sensor)
 cmdFactory = CommandFactory()
 configs = {}
 

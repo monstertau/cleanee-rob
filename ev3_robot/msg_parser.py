@@ -11,7 +11,7 @@ class CommandFactory:
         self.command_dict = json.loads(msg)
         cmd = self.command_dict.get("command", "")
         metadata = self.command_dict.get("metadata", {})
-        if cmd == "move_coord":
+        if cmd == "move":
             return MoveCoordCommand(cmd, metadata)
         elif cmd == "stop":
             return StopCarCommand(cmd, metadata)

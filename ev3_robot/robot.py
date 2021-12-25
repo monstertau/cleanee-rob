@@ -3,13 +3,16 @@ import time
 
 
 class Robot:
-    def __init__(self, left_motor, right_motor, rotate_motor):
+    def __init__(self, left_motor, right_motor, rotate_motor,ultrasonic_sensor):
         self.left_motor = left_motor
         self.right_motor = right_motor
         self.rotate_motor = rotate_motor
+        self.ultrasonic_sensor = ultrasonic_sensor
         self.arm_position = 0
 
     def run(self):
+        if self.ultrasonic_sensor.distance_centimeters < 20:
+            print("Object infront!!!")
         self.left_motor.run_forever()
         self.right_motor.run_forever()
 
