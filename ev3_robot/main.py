@@ -1,72 +1,93 @@
-# Import the necessary libraries
-import paho.mqtt.client as mqtt
-from msg_parser import CommandFactory
-from ev3dev2.motor import *
-from ev3dev2.sound import Sound
-from ev3dev2.sensor import *
-from ev3dev2.sensor.lego import *
-from robot import Robot
+from ev3dev2.motor import LargeMotor, MediumMotor, OUTPUT_A, OUTPUT_B, OUTPUT_C
+from ev3dev2.sensor import INPUT_1
+from ev3dev2.sensor.lego import UltrasonicSensor
+from os import path
+from typing import Callable
 import yaml
-MQTT_HOST = "192.168.2.108"
-MQTT_PORT = 1883
-KEEP_ALIVE = 60
-TOPIC_CONNECT = "topic/connect"
-TOPIC_CONTROL = "topic/control"
 
-print("Connecting to motors...")
+from connection import Connection, ConnectionConfig
+from msg_parser import CommandFactory
+from robot import Robot
 
-# Create the sensors and motors objects
-motorA = LargeMotor(OUTPUT_A)
-motorD = LargeMotor(OUTPUT_D)
-motorC = MediumMotor(OUTPUT_C)
-ultrasonic_sensor = UltrasonicSensor(INPUT_1)
-# tank_drive = MoveTank(OUTPUT_A, OUTPUT_B)
-# steering_drive = MoveSteering(OUTPUT_A, OUTPUT_B)
+CONFIG_NAME = "config.yml"
 
-spkr = Sound()
+def load_config() -> ConnectionConfig:
+    """
+    Loads the yaml config into memory. The config file has unique values for
+    each environment, and is therefore not committed to the repository. There
+    is, however, an example file that contains the keys required by the program
+    to work. It should be copied and renamed to the value of the CONFIG_NAME
+    constant.
+    """
 
-# # color_sensor_in1 = ColorSensor(INPUT_1)
-# # ultrasonic_sensor_in2 = UltrasonicSensor(INPUT_2)
-# # gyro_sensor_in3 = GyroSensor(INPUT_3)
-# # gps_sensor_in4 = GPSSensor(INPUT_4)
-# # pen_in5 = Pen(INPUT_5)
-robot = Robot(motorA, motorD, motorC, ultrasonic_sensor)
-cmdFactory = CommandFactory()
-configs = {}
+    MQTT_CONFIG_KEYS = ["host", "port", "keep_alive", "topic_control", "topic_connect"]
+
+    config_path = path.join(
+        path.dirname(path.realpath(__file__)),
+        CONFIG_NAME
+    )
+
+    if not path.isfile(config_path):
+        print(
+            "Failed to load config file {} at {}. ".format(CONFIG_NAME, config_path) +
+            "Make sure you duplicated the config.example.yml, renamed it to " +
+            "{} and set the correct values for your environment.".format(CONFIG_NAME)
+        )
+
+        return None
+
+    with open(config_path, 'r') as config_file:
+        parsed_config = yaml.full_load(config_file)
+
+    mqtt_config = parsed_config["mqtt_server"]
+    missing_keys = False
+    for key in MQTT_CONFIG_KEYS:
+        if not key in mqtt_config:
+            missing_keys = True
+            print("Missing key '{}' in the config file.".format(key))
+
+    if missing_keys:
+        return None
+
+    return ConnectionConfig(
+        mqtt_config.get("host"),
+        mqtt_config.get("port"),
+        mqtt_config.get("keep_alive"),
+        mqtt_config.get("topic_connect"),
+        mqtt_config.get("topic_control")
+    )
 
 
-def on_connect(client, userdata, flags, rc):
-    print("Connected with result code " + str(rc))
-    control_topic = configs.get("topic_control", TOPIC_CONTROL)
-    client.subscribe(control_topic)
+def on_message(cmd_factory, robot: Robot) -> Callable[[str], None]:
+    """
+    Creates a handler for when a control message is received. This will only be
+    called for this robot, so we are only concerned with the actual payload of
+    the MQTT message, which is already decoded for us by the Connection class.
+    """
 
-
-def on_message(client, userdata, msg):
-    try:
-        command = cmdFactory.get_command(msg.payload.decode())
+    def handler(msg: str):
+        command = cmd_factory.get_command(msg)
         command.execute(robot)
-    except Exception as e:
-        print(e)
 
-
-with open('config.yml') as f:
-    configs = yaml.load(f, Loader=yaml.FullLoader)
-
+    return handler
 
 def main():
-    host = configs.get("host", MQTT_HOST)
-    port = configs.get("port", MQTT_PORT)
-    keep_alive = configs.get("keep_alive", KEEP_ALIVE)
-    client = mqtt.Client()
+    config = load_config()
+    if config is None:
+        return
 
-    print("Connecting to mqtt client...")
-    client.connect(host, port, keep_alive)
+    robot = Robot(
+        LargeMotor(OUTPUT_A),
+        LargeMotor(OUTPUT_C),
+        MediumMotor(OUTPUT_B),
+        UltrasonicSensor(INPUT_1)
+    )
+    cmd_factory = CommandFactory()
+    connection = Connection(config)
 
-    client.on_connect = on_connect
-    client.on_message = on_message
+    connection.on_control_message = on_message(cmd_factory, robot)
 
-    client.loop_forever()
-
+    connection.establish()
 
 if __name__ == "__main__":
     main()
