@@ -14,19 +14,19 @@ def on_press(key):
     msg = ""
     if key == keyboard.Key.up:
         msg = json.dumps(
-            {"command": "move_coord", "metadata": {"x": 0, "y": 1}})
+            {"command": "move", "metadata": {"x": 0, "y": 1}})
         client.publish(control_topic, msg)
     elif key == keyboard.Key.down:
         msg = json.dumps(
-            {"command": "move_coord", "metadata": {"x": 0, "y": -1}})
+            {"command": "move", "metadata": {"x": 0, "y": -1}})
         client.publish(control_topic, msg)
     elif key == keyboard.Key.left:
         msg = json.dumps(
-            {"command": "move_coord", "metadata": {"x": -1, "y": 0}})
+            {"command": "move", "metadata": {"x": -1, "y": 0}})
         client.publish(control_topic, msg)
     elif key == keyboard.Key.right:
         msg = json.dumps(
-            {"command": "move_coord", "metadata": {"x": 1, "y": 0}})
+            {"command": "move", "metadata": {"x": 1, "y": 0}})
         client.publish(control_topic, msg)
     elif str(key) == "'i'":
         msg = json.dumps(

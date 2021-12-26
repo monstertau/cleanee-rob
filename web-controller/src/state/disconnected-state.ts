@@ -40,9 +40,6 @@ export class DisconnectedState implements ApplicationState {
         this.connectionErrorEl = applicationUI.getApplicationElement("connection-error");
 
         applicationUI.connectionStatus.textContent = "Disconnected";
-
-        this.enableForm();
-
         applicationUI.showDiv("disconnected-state");
     }
 

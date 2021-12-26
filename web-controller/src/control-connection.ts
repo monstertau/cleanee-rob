@@ -80,14 +80,9 @@ type RobotCommand =
  */
 export class ControlConnection {
 
-    private static readonly ControlTopic = "topic/control";
-    private static readonly ConnectTopic = "topic/connect";
-    private static readonly Timeout = 15; // seconds
+    private static readonly MQTTTopic = "topic/control";
 
     private readonly client: Paho.MQTT.Client;
-    private finishConnection: ((value: void | PromiseLike<void>) => void) | null = null;
-    private connectTimeoutHandle = 0;
-    private connected = false;
 
     private movement = { x: 0, y: 0 };
     private lastArmAction: ArmAction | null = null;
@@ -99,6 +94,7 @@ export class ControlConnection {
         this.client = new Paho.MQTT.Client(host, port, "web-controller");
 
         this.client.onMessageArrived = this.onMessageArrived.bind(this);
+        this.client.onMessageDelivered = this.onMessageDelivered.bind(this);
         this.client.onConnectionLost = this.onDisconnected.bind(this);
     }
 
@@ -120,28 +116,13 @@ export class ControlConnection {
         return new Promise((resolve, reject) => {
             this.client.connect({
                 onSuccess: (o: Paho.MQTT.WithInvocationContext) => {
-                    this.client.subscribe(ControlConnection.ConnectTopic);
-
-                    this.client.send(
-                        ControlConnection.ConnectTopic,
-                        `init_con:${this.client.clientId}`,
-                        2
-                    );
-
-                    // Give the rest of the class the possibility to "resolve"
-                    // this promise when the end-to-end connection has been
-                    // established.
-                    this.finishConnection = resolve;
-
-                    this.connectTimeoutHandle = setTimeout(() => {
-                        reject("Timeout reached: robot did not respond.");
-                        this.finishConnection = null;
-                    }, ControlConnection.Timeout * 1000);
+                    this.onConnected(o);
+                    resolve();
                 },
                 onFailure: (e: Paho.MQTT.ErrorWithInvocationContext) => {
                     reject(e.errorMessage);
                 },
-                timeout: ControlConnection.Timeout,
+                timeout: 15,
             });
         });
     }
@@ -217,7 +198,7 @@ export class ControlConnection {
 
     private send(command: RobotCommand, qos: Paho.MQTT.Qos = 2, retained: boolean = false) {
         this.client.send(
-            ControlConnection.ControlTopic,
+            ControlConnection.MQTTTopic,
             JSON.stringify(command),
             qos,
             retained
@@ -248,6 +229,11 @@ export class ControlConnection {
         });
     }
 
+    private onConnected(o: Paho.MQTT.WithInvocationContext) {
+        console.log('connected');
+        console.log(o);
+    }
+
     private onDisconnected(error: Paho.MQTT.MQTTError) {
         alert("Connection to the robot was lost.");
 
@@ -255,53 +241,18 @@ export class ControlConnection {
     }
 
     private onMessageArrived(message: Paho.MQTT.Message) {
+        console.log('message arrived');
         console.log(message);
-
-        switch (message.destinationName) {
-            case ControlConnection.ConnectTopic:
-                this.handleConnectionMessage(message);
-                break;
-            default:
-                break;
-        }
     }
 
-    private handleConnectionMessage(message: Paho.MQTT.Message): void {
-        const CON_OK_PREFIX = "con_ok:";
-        const CLOSE_CON_PREFIX = "close_con:";
-        const payload = message.payloadString;
-
-        if (!this.connected && payload.startsWith(CON_OK_PREFIX) && this.finishConnection) {
-            clearTimeout(this.connectTimeoutHandle);
-            this.connectTimeoutHandle = 0;
-
-            const robot_client_id = payload.substring(CON_OK_PREFIX.length);
-
-            this.client.send(
-                ControlConnection.ConnectTopic,
-                `con_ok:${this.client.clientId}:${robot_client_id}`,
-                2
-            );
-
-            this.finishConnection();
-            this.finishConnection = null;
-            this.connected = true;
-        } else if (this.connected && payload.startsWith(CLOSE_CON_PREFIX)) {
-            this.enterDisconnectedState();
-        }
+    private onMessageDelivered(message: Paho.MQTT.Message) {
     }
 
     private enterDisconnectedState(): void {
-        this.connected = false;
-
         const event = new CustomEvent("application-state-change", {
             detail: new DisconnectedState()
         });
 
         window.dispatchEvent(event);
-    }
-
-    private get connectionTopic(): string {
-        return `${ControlConnection.ControlTopic}/${this.client.clientId}`;
     }
 }
