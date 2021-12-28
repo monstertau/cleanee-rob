@@ -1,6 +1,6 @@
 from robot import Robot
 import json
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 
 
 class CommandFactory:
@@ -28,7 +28,7 @@ class CommandFactory:
         elif cmd == "arm_set_position":
             return ArmSetPositionCommand(cmd, metadata)
         else:
-            raise Exception("Unknown Command")
+            print("Unknown Command: {}".format(cmd))
 
 
 class Command:
@@ -76,7 +76,7 @@ class ArmInCommand(Command):
 
     def execute(self, robot: Robot):
         if self.speed_sp != 0:
-            robot.arm_in(speed_sp)
+            robot.arm_in(self.speed_sp)
         else:
             robot.arm_in()
 
@@ -91,7 +91,7 @@ class ArmOutCommand(Command):
 
     def execute(self, robot: Robot):
         if self.speed_sp != 0:
-            robot.arm_out(speed_sp)
+            robot.arm_out(self.speed_sp)
         else:
             robot.arm_out()
 
