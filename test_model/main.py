@@ -69,16 +69,12 @@ def process_yolov5(file: UploadFile = File(...)):
     name = f"./data/{str(uuid.uuid4())}.png"
 
     image.filename = name
-    width, height, bboxes = yolov5(image)
+    classes, converted_img = yolov5(image)
 
-    result = {
-        "image_size": {
-            'width': width,
-            'height': height,
-        },
-        "bb_output": bboxes,
-    }
-    return result
+    bytes_io = io.BytesIO()
+    converted_img.save(name)
+    converted_img.save(bytes_io, format="PNG")
+    return Response(bytes_io.getvalue(), media_type="image/png")
 
 
 @app.websocket("/yolo_ws/{client_id}")
@@ -93,14 +89,14 @@ async def process_yolov5_ws(websocket: WebSocket, client_id: int):
             dec = base64.b64decode(image + "===")
             image = Image.open(BytesIO(dec)).convert("RGB")
 
-            width, height, bboxes = yolov5(image)
+            # Process the image
+            name = f"/data/{str(uuid.uuid4())}.png"
+            image.filename = name
+            classes, converted_img = yolov5(image)
 
             result = {
-                "image_size": {
-                    'width': width,
-                    'height': height,
-                },
-                "bb_output": bboxes,
+                "prediction": json.dumps(classes),
+                "output": base64_encode_img(converted_img),
             }
             # logging.info("-----", json.dumps(result))
 
