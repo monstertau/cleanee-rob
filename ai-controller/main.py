@@ -1,57 +1,110 @@
-from PIL import Image, ImageTk, ImageDraw
-import PySimpleGUI as sg
-import requests
-from yolov5 import yolov5
+import cv2
+from os import path
+from typing import Tuple
+import yaml
 
-IMAGE_URL = "http://192.168.10.242:8080/jpeg"
-ASPECT_RATIO = 640 / 480
-TARGET_WIDTH = 400
-TARGET_HEIGHT = int(TARGET_WIDTH / ASPECT_RATIO)
-EVENT_READ_TIMEOUT = 1000 / 30
+from core.detection import DetectionConfig, BufferlessVideoCapture, BottleDetector
+from core.instructions import *
+from core.mqtt_connection import ConnectionConfig, MqttConnection
 
-def update_img(window):
-    req = requests.get(IMAGE_URL, stream=True)
 
-    image = Image.open(req.raw).resize((TARGET_WIDTH, TARGET_HEIGHT))
-    draw = ImageDraw.Draw(image)
+CONFIG_NAME = "config.yml"
 
-    preds, _ = yolov5(image.convert("RGB"))
 
-    if len(preds) != 1 and preds[0] is not None:
-        return
+def load_config() -> Tuple[ConnectionConfig, DetectionConfig]:
+    """
+    Loads the yaml config into memory. The config file has unique values for
+    each environment, and is therefore not committed to the repository. There
+    is, however, an example file that contains the keys required by the program
+    to work. It should be copied and renamed to the value of the CONFIG_NAME
+    constant.
+    """
 
-    pred = preds[0]
+    MQTT_CONFIG_KEYS = ["host", "port", "keep_alive", "topic"]
+    DETECTION_CONFIG_KEYS = ["image_url", "failed_detection_threshold"]
 
-    if len(pred) != 1:
-        return
+    config_path = path.join(
+        path.dirname(path.realpath(__file__)),
+        CONFIG_NAME
+    )
 
-    print("Updating prediction...")
-    for *box, confidence, label in pred:
-        draw.rectangle(
-            box,
-            outline="#00ff00",
-            width=2
+    if not path.isfile(config_path):
+        print(
+            "Failed to load config file {} at {}. ".format(CONFIG_NAME, config_path) +
+            "Make sure you duplicated the config.example.yml, renamed it to " +
+            "{} and set the correct values for your environment.".format(CONFIG_NAME)
         )
 
-    window.Element("image").update(data=ImageTk.PhotoImage(image))
+        return None
 
+    with open(config_path, 'r') as config_file:
+        parsed_config = yaml.full_load(config_file)
+
+    def verify_keys(dict_key: str, keys: list[str]) -> bool:
+        config = parsed_config[dict_key]
+        missing_keys = False
+        for key in keys:
+            if not key in config:
+                missing_keys = True
+                print("Missing key '{}.{}' in the config file.".format(dict_key, key))
+
+        return not missing_keys
+
+    if not verify_keys("mqtt_server", MQTT_CONFIG_KEYS) or not verify_keys("detection", DETECTION_CONFIG_KEYS):
+        return None
+
+    connection_config = ConnectionConfig(
+        parsed_config["mqtt_server"].get("host"),
+        parsed_config["mqtt_server"].get("port"),
+        parsed_config["mqtt_server"].get("keep_alive"),
+        parsed_config["mqtt_server"].get("topic")
+    )
+
+    detection_config = DetectionConfig(
+        parsed_config["detection"].get("image_url"),
+        parsed_config["detection"].get("failed_detection_threshold")
+    )
+
+    return (connection_config, detection_config)
 
 def main():
-    layout = [
-        [sg.Image(key="image")]
-    ]
+    main.run_model = False
+    config_load_result = load_config()
+    if config_load_result is None:
+        return
 
-    window = sg.Window("rect on image", layout)
-    window.Finalize()
+    connection_config, detection_config = config_load_result
+
+    mqtt_connection = MqttConnection(connection_config)
+    detector = BottleDetector(detection_config.failed_detection_threshold)
+    capture = BufferlessVideoCapture(detection_config.image_url)
+
+
+    def on_active_change(new_active_state: bool) -> None:
+        print("Changing AI active status: {}".format(new_active_state))
+        main.run_model = new_active_state
+
+    mqtt_connection.on_active_change = on_active_change
+    mqtt_connection.connect()
+
+    # Make sure we start in the roaming state
+    mqtt_connection.submit_instruction(StartRoamingInstruction())
 
     while True:
-        update_img(window)
+        frame = cv2.rotate(capture.read(), cv2.ROTATE_90_CLOCKWISE)
 
-        event, values = window.read(EVENT_READ_TIMEOUT)
-        if event in (sg.WIN_CLOSED, 'Quit'):
+        if main.run_model:
+            instruction, frame = detector.get_instruction(frame)
+            mqtt_connection.submit_instruction(instruction)
+
+        cv2.imshow("Image", frame)
+        key = cv2.waitKey(1)
+        if key == 27:
             break
 
-    window.close()
+    cv2.destroyAllWindows()
+    print("Disconnecting")
+    mqtt_connection.disconnect()
 
 if __name__ == "__main__":
     main()

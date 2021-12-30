@@ -1,0 +1,9 @@
+detection:
+  image_url: # the full path to the MJPEG stream
+  failed_detection_threshold: # the number of failed detections before the robot switches to roaming again
+
+mqtt_server: # mqtt server config
+  host: # your MQTT Broker Server IP, default is your PC's LAN IP
+  port: # your MQTT Broker Server Port, default is 1883
+  keep_alive: 60 ## max alive of mqtt topic connect session
+  topic: topic/control # control robot topic
