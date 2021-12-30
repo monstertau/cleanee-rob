@@ -1,15 +1,17 @@
+from controller import RobotController
 from ev3dev2.motor import LargeMotor, MediumMotor, OUTPUT_A, OUTPUT_B, OUTPUT_C
 from ev3dev2.sensor import INPUT_1
 from ev3dev2.sensor.lego import UltrasonicSensor
 from os import path
-from typing import Callable
 import yaml
 
 from connection import Connection, ConnectionConfig
 from msg_parser import CommandFactory
 from robot import Robot
 
+
 CONFIG_NAME = "config.yml"
+
 
 def load_config() -> ConnectionConfig:
     """
@@ -58,19 +60,6 @@ def load_config() -> ConnectionConfig:
     )
 
 
-def on_message(cmd_factory, robot: Robot) -> Callable[[str], None]:
-    """
-    Creates a handler for when a control message is received. This will only be
-    called for this robot, so we are only concerned with the actual payload of
-    the MQTT message, which is already decoded for us by the Connection class.
-    """
-
-    def handler(msg: str):
-        command = cmd_factory.get_command(msg)
-        command.execute(robot)
-
-    return handler
-
 def main():
     config = load_config()
     if config is None:
@@ -83,11 +72,19 @@ def main():
         UltrasonicSensor(INPUT_1)
     )
     cmd_factory = CommandFactory()
+    robot_controller = RobotController(robot, cmd_factory)
+
     connection = Connection(config)
 
-    connection.on_control_message = on_message(cmd_factory, robot)
+    connection.on_control_message = robot_controller.on_message
 
     connection.establish()
+
+    while True:
+        robot_controller.update()
+
+    # connection.disconnect()
+
 
 if __name__ == "__main__":
     main()

@@ -1,5 +1,6 @@
 from time import sleep
 from typing import Callable
+from threading import Condition
 
 from paho.mqtt.client import Client as MQTTClient, MQTTMessage
 
@@ -44,16 +45,21 @@ class Connection(object):
             2
         )
 
+        self.client.on_connect = self.__on_connect()
+        self.client.on_message = self.__on_message()
+
+        self.client.loop_start()
+
         self.client.connect_async(
             self.config.mqtt_host,
             self.config.mqtt_port,
             self.config.keep_alive
         )
 
-        self.client.on_connect = self.__on_connect()
-        self.client.on_message = self.__on_message()
+        self.__cv = Condition()
 
-        self.client.loop_forever()
+        with self.__cv:
+            self.__cv.wait_for(self.is_connected)
 
     def disconnect(self) -> None:
         self.client.publish(
@@ -63,9 +69,13 @@ class Connection(object):
         )
 
         self.client.disconnect()
+        self.client.loop_stop()
 
         self.__controller_id = ""
         self.__connected = False
+
+    def is_connected(self) -> bool:
+        return self.__connected
 
     def __on_connect(self) -> Callable[[MQTTClient, None, None, None], None]:
         def on_connect(client: MQTTClient, userdata: None, flags: None, rc: None) -> None:
@@ -120,19 +130,18 @@ class Connection(object):
                 self.disconnect()
 
     def __on_finish_connection(self) -> None:
-        self.__connected = True
         print("\tConnection established\n")
-
         self.client.subscribe(self.__get_control_topic())
 
-    def __get_control_topic(self) -> str:
-        if not self.__connected:
-            return None
+        with self.__cv:
+            self.__connected = True
+            self.__cv.notify()
 
+    def __get_control_topic(self) -> str:
         return "{}/{}".format(
             self.config.control_topic_prefix,
             self.__controller_id
-        );
+        )
 
     def __get_disconnect_msg(self):
         return "close_con:{}".format(self.config.client_id)

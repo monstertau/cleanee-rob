@@ -10,10 +10,17 @@ class Robot:
         self.ultrasonic_sensor = ultrasonic_sensor
         self.arm_position = 0
 
-    def run(self):
+    def get_distance_reading(self):
+        return self.ultrasonic_sensor.distance_centimeters
+
+    def run(self, speed):
         if self.ultrasonic_sensor.distance_centimeters < 20:
             print("Object infront!!!")
+
+        self.left_motor.speed_sp = speed * self.left_motor.max_speed
         self.left_motor.run_forever()
+
+        self.right_motor.speed_sp = speed * self.right_motor.max_speed
         self.right_motor.run_forever()
 
     def stop(self):
