@@ -6,15 +6,44 @@ import urllib.request
 import imutils
 import requests
 import socket
+import threading
+import queue
 from model.yolov5 import yolov5
 from robot_handler import RobotHandler
 
-URL = "http://192.168.2.102:8081/mjpeg"
+URL = "http://192.168.10.242:8080/mjpeg"
 HOST = "localhost"
 PORT = 1883
 KEEPALIVE = 60
 TOPIC_CONTROL = "topic/control"
 TOPIC_RESPONSE = "topic/robot_response"
+
+# bufferless VideoCapture
+class VideoCapture:
+
+  def __init__(self, name):
+    self.cap = cv2.VideoCapture(name)
+    self.q = queue.Queue()
+    t = threading.Thread(target=self._reader)
+    t.daemon = True
+    t.start()
+
+  # read frames as soon as they are available, keeping only most recent one
+  def _reader(self):
+    while True:
+      ret, frame = self.cap.read()
+      if not ret:
+        break
+      if not self.q.empty():
+        try:
+          self.q.get_nowait()   # discard previous (unprocessed) frame
+        except queue.Empty:
+          pass
+      self.q.put(frame)
+
+  def read(self):
+    return self.q.get()
+
 
 
 class Command(enum.Enum):
@@ -86,7 +115,7 @@ class CameraDetection:
                 self.last_command = Command.INIT
 
         else:
-            ''' Set non-object moving command to init everytime object has detected, 
+            ''' Set non-object moving command to init everytime object has detected,
             therefore if object is missing in last time detected, the procedure start from beginning'''
             self.last_command = Command.INIT
             if distance > 100:
@@ -111,13 +140,13 @@ class CameraDetection:
         return msg
 
     def detect(self):
-        cap = cv2.VideoCapture(URL)
+        cap = VideoCapture(URL)
 
         while True:
-            _, frame = cap.read()
+            frame = cap.read()
             frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
             width, height, boxes = yolov5(frame)
-            # self.check_distance(boxes, width, height)  # send command
+            self.check_distance(boxes, width, height)  # send command
 
             img = self.draw_labels(boxes, width, height, frame)
 

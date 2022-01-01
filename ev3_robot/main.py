@@ -1,6 +1,6 @@
 from controller import RobotController
 from ev3dev2.motor import LargeMotor, MediumMotor, OUTPUT_A, OUTPUT_B, OUTPUT_C
-from ev3dev2.sensor import INPUT_1
+from ev3dev2.sensor import INPUT_2
 from ev3dev2.sensor.lego import UltrasonicSensor
 from os import path
 import yaml
@@ -69,7 +69,7 @@ def main():
         LargeMotor(OUTPUT_A),
         LargeMotor(OUTPUT_C),
         MediumMotor(OUTPUT_B),
-        UltrasonicSensor(INPUT_1)
+        UltrasonicSensor(INPUT_2)
     )
     cmd_factory = CommandFactory()
     robot_controller = RobotController(robot, cmd_factory)

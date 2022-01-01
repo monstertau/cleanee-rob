@@ -91,6 +91,9 @@ body {
 
 #camera-feed {
     width: 800px;
+    height: 800px;
+    object-fit: contain;
+    transform: rotate(90deg);
 }
 
 #movement-states {

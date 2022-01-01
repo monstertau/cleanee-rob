@@ -21,7 +21,7 @@ def load_config() -> Tuple[ConnectionConfig, DetectionConfig]:
     """
 
     MQTT_CONFIG_KEYS = ["host", "port", "keep_alive", "topic"]
-    DETECTION_CONFIG_KEYS = ["image_url", "failed_detection_threshold"]
+    DETECTION_CONFIG_KEYS = ["image_url", "failed_detection_threshold", "bottom_blackout_height"]
 
     config_path = path.join(
         path.dirname(path.realpath(__file__)),
@@ -62,10 +62,22 @@ def load_config() -> Tuple[ConnectionConfig, DetectionConfig]:
 
     detection_config = DetectionConfig(
         parsed_config["detection"].get("image_url"),
-        parsed_config["detection"].get("failed_detection_threshold")
+        parsed_config["detection"].get("failed_detection_threshold"),
+        parsed_config["detection"].get("bottom_blackout_height")
     )
 
     return (connection_config, detection_config)
+
+
+def discard_bottom_pixels(frame, frame_width, frame_height, discard_height):
+    return cv2.rectangle(
+        frame,
+        (0, frame_height - discard_height),
+        (frame_width, frame_height),
+        (0, 0, 0),
+        cv2.FILLED
+    )
+
 
 def main():
     main.run_model = False
@@ -82,16 +94,25 @@ def main():
 
     def on_active_change(new_active_state: bool) -> None:
         print("Changing AI active status: {}".format(new_active_state))
+
+        if new_active_state:
+            detector.initialize()
+
         main.run_model = new_active_state
 
     mqtt_connection.on_active_change = on_active_change
     mqtt_connection.connect()
 
-    # Make sure we start in the roaming state
-    mqtt_connection.submit_instruction(StartRoamingInstruction())
-
     while True:
         frame = cv2.rotate(capture.read(), cv2.ROTATE_90_CLOCKWISE)
+        frame_height, frame_width, _ = frame.shape
+
+        frame = discard_bottom_pixels(
+            frame,
+            frame_width,
+            frame_height,
+            detection_config.bottom_blackout_height
+        )
 
         if main.run_model:
             instruction, frame = detector.get_instruction(frame)

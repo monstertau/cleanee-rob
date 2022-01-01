@@ -29,6 +29,8 @@ class CommandFactory:
             return ArmSetPositionCommand(cmd, metadata)
         elif cmd == "switch_state":
             return SwitchControllerState(cmd, metadata)
+        elif cmd == "set_ai_active":
+            return AIActiveCommand(cmd, metadata)
         else:
             print("Unknown Command: {}".format(cmd))
 
@@ -153,3 +155,14 @@ class SwitchControllerState(Command):
 
     def to_string(self):
         return "SwitchControllerState({})".format(self.new_state)
+
+class AIActiveCommand(Command):
+    def __init__(self, command: str, metadata: dict):
+        super().__init__(command, metadata)
+        self.active = metadata.get("active")
+
+    def execute(self, robot: Robot):
+        robot.stop()
+
+    def to_string(self):
+        return "AIActiveCommand({})".format(self.active)

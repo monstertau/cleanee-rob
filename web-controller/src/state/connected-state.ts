@@ -3,7 +3,6 @@ import type { ApplicationUI } from "../application-ui.js";
 import type { ControlStateListener, ControlConnection, ControlState } from "../control-connection.js";
 import type { Host } from "../lib.js";
 
-import { ArmAction } from "../robot-input.js";
 import { Direction } from "../control-connection.js";
 import { ApplicationState } from "./application-state";
 
@@ -42,6 +41,11 @@ export class ConnectedState implements ApplicationState, ControlStateListener {
         application.robotInput.setOnArmActionHandler(action => {
             this.controlConnection.dispatchArmAction(action);
         });
+
+        const aiEnabledCheckbox = applicationUI.getApplicationElement<HTMLInputElement>("ai-enabled-checkbox");
+        aiEnabledCheckbox.onchange = ev => {
+            this.controlConnection.setAIEnabled(aiEnabledCheckbox.checked);
+        };
     }
 
     onExit(application: Application, applicationUI: ApplicationUI): void {

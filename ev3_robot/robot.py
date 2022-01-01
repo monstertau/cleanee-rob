@@ -18,10 +18,9 @@ class Robot:
             print("Object infront!!!")
 
         self.left_motor.speed_sp = speed * self.left_motor.max_speed
-        self.left_motor.run_forever()
-
         self.right_motor.speed_sp = speed * self.right_motor.max_speed
-        self.right_motor.run_forever()
+        self.run_motors()
+
 
     def stop(self):
         self.left_motor.stop(stop_action="brake")
@@ -34,16 +33,20 @@ class Robot:
             self.left_motor.speed_sp = speed * self.left_motor.max_speed
             self.right_motor.speed_sp = speed * \
                 self.right_motor.max_speed * (1 - int(steering) * 2)
-            self.run()
+            self.run_motors()
         elif steering == 0 and y < 0:
             self.left_motor.speed_sp = speed * self.left_motor.max_speed * -1
             self.right_motor.speed_sp = speed * self.right_motor.max_speed * -1
-            self.run()
+            self.run_motors()
         else:
             self.left_motor.speed_sp = speed * \
                 self.left_motor.max_speed * (1 + int(steering) * 2)
             self.right_motor.speed_sp = speed * self.right_motor.max_speed
-            self.run()
+            self.run_motors()
+
+    def run_motors(self):
+        self.right_motor.run_forever()
+        self.left_motor.run_forever()
 
     def arm_run(self):
         self.rotate_motor.run_forever()

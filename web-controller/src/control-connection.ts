@@ -62,13 +62,21 @@ type ArmStopCommand = {
     command: "arm_stop"
 };
 
+type SwitchAIEnabled = {
+    command: "set_ai_active";
+    metadata: {
+        active: boolean;
+    };
+};
+
 type RobotCommand =
     | MoveCommand
     | ArmInCommand
     | ArmOutCommand
     | ArmResetPositionCommand
     | ArmSavePositionCommand
-    | ArmStopCommand;
+    | ArmStopCommand
+    | SwitchAIEnabled;
 
 /**
  * The ControlConnection class encapsulates the operations that can be performed
@@ -117,8 +125,12 @@ export class ControlConnection {
      * @returns A promise which resolves when a connection is established.
      */
     connect(): Promise<void> {
+        const lwt = new Paho.MQTT.Message(`close_con:${this.client.clientId}`);
+        lwt.destinationName = ControlConnection.ConnectTopic;
+
         return new Promise((resolve, reject) => {
             this.client.connect({
+                willMessage: lwt,
                 onSuccess: (o: Paho.MQTT.WithInvocationContext) => {
                     this.client.subscribe(ControlConnection.ConnectTopic);
 
@@ -209,6 +221,10 @@ export class ControlConnection {
         this.updateControlStateListener();
     }
 
+    setAIEnabled(active: boolean) {
+        this.send({ command: "set_ai_active", metadata: { active }});
+    }
+
     private verifyAxis(axis: number): void {
         if (axis < -1 || axis > 1) {
             throw new Error(`The axis value must be in range [-1, 1]. ${axis} given.`);
@@ -217,7 +233,7 @@ export class ControlConnection {
 
     private send(command: RobotCommand, qos: Paho.MQTT.Qos = 2, retained: boolean = false) {
         this.client.send(
-            ControlConnection.ControlTopic,
+            this.controlTopic,
             JSON.stringify(command),
             qos,
             retained
@@ -301,7 +317,7 @@ export class ControlConnection {
         window.dispatchEvent(event);
     }
 
-    private get connectionTopic(): string {
+    private get controlTopic(): string {
         return `${ControlConnection.ControlTopic}/${this.client.clientId}`;
     }
 }

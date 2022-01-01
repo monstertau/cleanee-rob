@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from msg_parser import Command, CommandFactory, SwitchControllerState
+from msg_parser import AIActiveCommand, Command, CommandFactory, SwitchControllerState
 from time import time
 from random import random, randrange
 from robot import Robot
@@ -46,25 +46,22 @@ class RoamState(RobotControllerState):
     STATE_MOVING = "moving"
     STATE_TURNING = "turning"
 
-    TURNING_LEFT = "left"
-    TURNING_RIGHT = "right"
-
-    MIN_TURN_DURATION = 5
-    MAX_TURN_DURATION = 10
+    MIN_TURN_DURATION = 10
+    MAX_TURN_DURATION = 15
 
     SAFE_DISTANCE_READING = 20 #cm
 
     __state = STATE_STOPPED
-    __turning = None
     __turn_duration = 0
     __turn_start = 0
+    __last_turn = None
 
     def __init__(self, robot: Robot) -> None:
         super().__init__()
 
         self.robot = robot
 
-    def on_command(command: Command):
+    def on_command(self, command: Command):
         pass
 
     def update(self):
@@ -91,22 +88,30 @@ class RoamState(RobotControllerState):
 
         print("Safe to move -> start moving")
         self.__state = RoamState.STATE_MOVING
-        self.robot.run(speed=0.5)
+        self.robot.run(speed=0.2)
 
-    def __start_turn(self):
+    def __start_turn(self, direction=None):
         self.__state = RoamState.STATE_TURNING
         self.robot.stop()
 
-        if random() > 0.5:
-            print("\tLeft")
-            self.__turning = RoamState.TURNING_LEFT
+        TURN_SPEED = 0.4
+
+        if direction == "left":
+            self.robot.moving_in_coord(-TURN_SPEED, 0)
+            self.__last_turn = "left"
+        elif direction == "right":
+            self.__last_turn = "right"
+            self.robot.moving_in_coord(TURN_SPEED, 0)
+        elif random() > 0.5:
+            self.robot.moving_in_coord(-TURN_SPEED, 0)
+            self.__last_turn = "left"
         else:
-            print("\tRight")
-            self.__turning = RoamState.TURNING_RIGHT
+            self.robot.moving_in_coord(TURN_SPEED, 0)
+            self.__last_turn = "right"
 
         self.__turn_duration = randrange(RoamState.MIN_TURN_DURATION, RoamState.MAX_TURN_DURATION)
         self.__turn_start = time()
-        print("Turning for {} ms".format(self.__turn_duration))
+        print("Turning for {} secs".format(self.__turn_duration))
 
     def __check_turn(self):
         current_time = time()
@@ -115,7 +120,7 @@ class RoamState(RobotControllerState):
 
         if not self.__is_safe():
             print("Unsafe after turn, starting new turn.")
-            self.__start_turn()
+            self.__start_turn(self.__last_turn)
 
         self.__start_moving()
 
@@ -127,23 +132,27 @@ class RobotController(object):
 
         self.robot = robot
         self.cmd_factory = cmd_factory
-        self.__state = RoamState(self.robot)
+        self.__state = CommandState(self.robot)
 
     def on_message(self, message: str):
         command = self.cmd_factory.get_command(message)
 
-        if command is SwitchControllerState:
+        if isinstance(command, SwitchControllerState):
             self.__switch_state(command.new_state)
-        else:
+        elif isinstance(command, AIActiveCommand) and not command.active:
+            self.__switch_state("commands")
+        elif isinstance(command, AIActiveCommand) and command.active:
+            self.__switch_state("roaming")
+        elif command is not None:
             self.__state.on_command(command)
 
     def update(self):
         self.__state.update()
 
     def __switch_state(self, new_state: str):
-        if new_state == "roaming" and self.__state is not RoamState:
+        if new_state == "roaming" and not isinstance(self.__state, RoamState):
             self.robot.stop()
             self.__state = RoamState(self.robot)
-        elif new_state == "commands" and self.__state is not CommandState:
+        elif new_state == "commands" and not isinstance(self.__state, CommandState):
             self.robot.stop()
             self.__state = CommandState(self.robot)

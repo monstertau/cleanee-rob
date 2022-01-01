@@ -127,7 +127,11 @@ class Connection(object):
             disconnecting_controller = decoded[len(CLOSE_CON_PREFIX):]
 
             if self.__controller_id == disconnecting_controller:
-                self.disconnect()
+                print("Lost connection with controller, waiting for new connection.")
+
+                self.client.unsubscribe(self.__get_control_topic())
+                self.__controller_id = ""
+                self.__connected = False
 
     def __on_finish_connection(self) -> None:
         print("\tConnection established\n")

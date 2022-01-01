@@ -9,9 +9,10 @@ class DetectionConfig(object):
     The configuration for the detection feature of the system.
     """
 
-    def __init__(self, image_url: str, failed_detection_threshold: int):
+    def __init__(self, image_url: str, failed_detection_threshold: int, bottom_blackout_height: int):
         self.image_url = image_url
         self.failed_detection_threshold = failed_detection_threshold
+        self.bottom_blackout_height = bottom_blackout_height
 
 class BufferlessVideoCapture:
 
@@ -48,9 +49,12 @@ class BottleDetector(object):
 
     def __init__(self, failed_detection_threshold: int) -> None:
         self.failed_detection_threshold = failed_detection_threshold
+        self.initialize()
+
+
+    def initialize(self):
         self.failed_detections = 0
         self.is_roaming = True
-
 
     def get_distance(self, box, frame_width):
         xmin, xmax = int(box['xmin']), int(box['xmax'])
@@ -60,11 +64,11 @@ class BottleDetector(object):
         return distance
 
     def get_instruction_from_distance(self, distance):
-        if distance > 100:
-            return TurnLeftInstruction()
+        if distance > 10:
+            return TurnLeftInstruction(distance)
 
-        elif distance < -100:
-            return TurnRightInstruction()
+        elif distance < -10:
+            return TurnRightInstruction(distance)
 
         else:
             return MoveForwardInstruction()

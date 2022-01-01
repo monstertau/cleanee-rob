@@ -1,6 +1,7 @@
 detection:
   image_url: # the full path to the MJPEG stream
   failed_detection_threshold: # the number of failed detections before the robot switches to roaming again
+  bottom_blackout_height: # the number of pixels from the bottom to ignore (if robot is in view)
 
 mqtt_server: # mqtt server config
   host: # your MQTT Broker Server IP, default is your PC's LAN IP
