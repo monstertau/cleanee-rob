@@ -1,6 +1,7 @@
 import cv2
 import queue
 import threading
+from typing import Tuple
 from core.instructions import *
 from core.yolov5 import yolov5
 
@@ -9,10 +10,11 @@ class DetectionConfig(object):
     The configuration for the detection feature of the system.
     """
 
-    def __init__(self, image_url: str, failed_detection_threshold: int, bottom_blackout_height: int):
+    def __init__(self, image_url: str, failed_detection_threshold: int, bottom_blackout_height: int, start_pickup_vdist: int):
         self.image_url = image_url
         self.failed_detection_threshold = failed_detection_threshold
         self.bottom_blackout_height = bottom_blackout_height
+        self.start_pickup_vdist = self.bottom_blackout_height + start_pickup_vdist
 
 class BufferlessVideoCapture:
 
@@ -47,28 +49,37 @@ class BufferlessVideoCapture:
 
 class BottleDetector(object):
 
-    def __init__(self, failed_detection_threshold: int) -> None:
+    def __init__(self, failed_detection_threshold: int, start_pickup_vdist: int) -> None:
         self.failed_detection_threshold = failed_detection_threshold
+        self.start_pickup_vdist = start_pickup_vdist
         self.initialize()
 
 
     def initialize(self):
         self.failed_detections = 0
         self.is_roaming = True
+        self.is_picking_up = False
 
-    def get_distance(self, box, frame_width):
-        xmin, xmax = int(box['xmin']), int(box['xmax'])
+    def get_distance(self, box, frame_width: int, frame_height: int) -> Tuple[float, float]:
+        xmin, xmax, ymax = int(box['xmin']), int(box['xmax']), int(box['ymax'])
 
         box_center_bottom_x = xmin + (xmax - xmin) // 2
-        distance = frame_width // 2 - box_center_bottom_x
-        return distance
+        horizontal_distance = frame_width // 2 - box_center_bottom_x
 
-    def get_instruction_from_distance(self, distance):
-        if distance > 10:
-            return TurnLeftInstruction(distance)
+        vertical_distance = frame_height - ymax
 
-        elif distance < -10:
-            return TurnRightInstruction(distance)
+        return (horizontal_distance, vertical_distance)
+
+    def get_instruction_from_distance(self, hdistance, vdistance):
+        if vdistance < self.start_pickup_vdist and abs(hdistance) < 10:
+            self.is_picking_up = True
+            return StartPickupInstruction()
+
+        if hdistance > 10:
+            return TurnLeftInstruction(hdistance)
+
+        elif hdistance < -10:
+            return TurnRightInstruction(hdistance)
 
         else:
             return MoveForwardInstruction()
@@ -94,8 +105,11 @@ class BottleDetector(object):
         return img
 
     def get_instruction(self, frame):
-        frame_width, height, boxes = yolov5(frame)
-        frame = self.draw_labels(boxes, frame_width, height, frame)
+        if self.is_picking_up:
+            return (None, frame)
+
+        frame_width, frame_height, boxes = yolov5(frame)
+        frame = self.draw_labels(boxes, frame_width, frame_height, frame)
 
         instruction = None
 
@@ -104,8 +118,8 @@ class BottleDetector(object):
             instruction = StopRoamingInstruction()
 
         elif not self.is_roaming and len(boxes) == 1:
-            distance = self.get_distance(boxes[0], frame_width)
-            instruction = self.get_instruction_from_distance(distance)
+            hdistance, vdistance = self.get_distance(boxes[0], frame_width, frame_height)
+            instruction = self.get_instruction_from_distance(hdistance, vdistance)
 
         elif self.failed_detections >= self.failed_detection_threshold:
             self.failed_detections = 0

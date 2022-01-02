@@ -21,7 +21,7 @@ def load_config() -> Tuple[ConnectionConfig, DetectionConfig]:
     """
 
     MQTT_CONFIG_KEYS = ["host", "port", "keep_alive", "topic"]
-    DETECTION_CONFIG_KEYS = ["image_url", "failed_detection_threshold", "bottom_blackout_height"]
+    DETECTION_CONFIG_KEYS = ["image_url", "failed_detection_threshold", "bottom_blackout_height", "start_pickup_vdist"]
 
     config_path = path.join(
         path.dirname(path.realpath(__file__)),
@@ -63,7 +63,8 @@ def load_config() -> Tuple[ConnectionConfig, DetectionConfig]:
     detection_config = DetectionConfig(
         parsed_config["detection"].get("image_url"),
         parsed_config["detection"].get("failed_detection_threshold"),
-        parsed_config["detection"].get("bottom_blackout_height")
+        parsed_config["detection"].get("bottom_blackout_height"),
+        parsed_config["detection"].get("start_pickup_vdist")
     )
 
     return (connection_config, detection_config)
@@ -88,7 +89,7 @@ def main():
     connection_config, detection_config = config_load_result
 
     mqtt_connection = MqttConnection(connection_config)
-    detector = BottleDetector(detection_config.failed_detection_threshold)
+    detector = BottleDetector(detection_config.failed_detection_threshold, detection_config.start_pickup_vdist)
     capture = BufferlessVideoCapture(detection_config.image_url)
 
 
@@ -122,6 +123,8 @@ def main():
         key = cv2.waitKey(1)
         if key == 27:
             break
+        elif key == 13:
+            main.run_model = not main.run_model
 
     cv2.destroyAllWindows()
     print("Disconnecting")

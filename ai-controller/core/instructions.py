@@ -93,3 +93,13 @@ class StartRoamingInstruction(Instruction):
         return json.dumps(self.contents)
 
 
+class StartPickupInstruction(Instruction):
+    contents = {
+        "command": "switch_state",
+        "metadata": {
+            "state": "grabbing"
+        }
+    }
+
+    def serialize(self) -> str:
+        return json.dumps(self.contents)

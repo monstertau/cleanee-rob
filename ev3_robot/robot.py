@@ -10,7 +10,7 @@ class Robot:
         self.ultrasonic_sensor = ultrasonic_sensor
         self.arm_position = 0
 
-    def get_distance_reading(self):
+    def get_distance_reading(self) -> float:
         return self.ultrasonic_sensor.distance_centimeters
 
     def run(self, speed):

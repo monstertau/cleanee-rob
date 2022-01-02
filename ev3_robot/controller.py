@@ -5,6 +5,12 @@ from random import random, randrange
 from robot import Robot
 
 
+class RobotConfig(object):
+
+    def __init__(self, grab_distance: float) -> None:
+        self.grab_distance = grab_distance
+
+
 class RobotControllerState(ABC):
 
     @abstractmethod
@@ -32,6 +38,35 @@ class CommandState(RobotControllerState):
 
     def update(self):
         pass
+
+
+class FinishGrabState(CommandState):
+
+    def __init__(self, robot: Robot, grab_distance: float) -> None:
+        super().__init__(robot)
+        self.is_overruled = False
+        self.grabbing_initiated = False
+        self.grab_distance = grab_distance
+
+    def on_command(self, command: Command):
+        self.is_overruled = True
+        self.robot.stop()
+        self.robot.arm_stop()
+
+        return super().on_command(command)
+
+    def update(self):
+        if self.is_overruled or self.grabbing_initiated:
+            return
+
+        if self.robot.get_distance_reading() > self.grab_distance:
+            self.robot.run(0.2)
+            return
+
+        self.robot.stop()
+
+        self.grabbing_initiated = True
+        self.robot.arm_grab()
 
 
 class RoamState(RobotControllerState):
@@ -127,12 +162,13 @@ class RoamState(RobotControllerState):
 
 class RobotController(object):
 
-    def __init__(self, robot: Robot, cmd_factory: CommandFactory) -> None:
+    def __init__(self, robot: Robot, cmd_factory: CommandFactory, config: RobotConfig) -> None:
         super().__init__()
 
         self.robot = robot
         self.cmd_factory = cmd_factory
         self.__state = CommandState(self.robot)
+        self.config = config
 
     def on_message(self, message: str):
         command = self.cmd_factory.get_command(message)
@@ -151,8 +187,14 @@ class RobotController(object):
 
     def __switch_state(self, new_state: str):
         if new_state == "roaming" and not isinstance(self.__state, RoamState):
+            print("Switching state to roaming")
             self.robot.stop()
             self.__state = RoamState(self.robot)
         elif new_state == "commands" and not isinstance(self.__state, CommandState):
+            print("Switching state to commands")
             self.robot.stop()
             self.__state = CommandState(self.robot)
+        elif new_state == "grabbing" and not isinstance(self.__state, FinishGrabState):
+            print("Switching state to grabbing")
+            self.robot.stop()
+            self.__state = FinishGrabState(self.robot, self.config.grab_distance)
