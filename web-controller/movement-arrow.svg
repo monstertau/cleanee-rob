@@ -1,0 +1,9 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <!-- Rounded corner rectangle -->
+    <rect x="7" y="7" width="86" height="86" rx="15" fill="none" stroke="black" stroke-width="7" />
+
+    <!-- Arrow -->
+    <g transform="scale(0.5) translate(48 40)">
+        <polygon points="50 15, 100 100, 0 100"/>
+    </g>
+</svg>

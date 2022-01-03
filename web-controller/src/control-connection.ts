@@ -1,5 +1,6 @@
 /// <reference path="../node_modules/@types/paho-mqtt/index.d.ts" />
 
+import { Host } from "./lib.js";
 import { ArmAction } from "./robot-input.js";
 import { DisconnectedState } from "./state/disconnected-state.js";
 
@@ -22,7 +23,7 @@ export enum ArmMovement {
  * maintained by the control connection and needs to be kept in sync.
  */
 export interface ControlState {
-    activeDirections: Set<Direction>;
+    activeDirections: Map<Direction, number>;
     armMovement: ArmMovement;
 }
 
@@ -62,6 +63,13 @@ type ArmStopCommand = {
     command: "arm_stop"
 };
 
+type SwitchStateCommand = {
+    command: "switch_state";
+    metadata: {
+        new_state: "grabbing" | "roaming" | "commands";
+    };
+}
+
 type SwitchAIEnabled = {
     command: "set_ai_active";
     metadata: {
@@ -76,7 +84,18 @@ type RobotCommand =
     | ArmResetPositionCommand
     | ArmSavePositionCommand
     | ArmStopCommand
+    | SwitchStateCommand
     | SwitchAIEnabled;
+
+export interface IControlConnection {
+    host: Host;
+    setControlStateListener(listener: ControlStateListener): void;
+    connect(): Promise<void>;
+    disconnect(): void;
+    updateMovement(x: number, y: number): void;
+    dispatchArmAction(action: ArmAction): void;
+    setAIEnabled(active: boolean): void;
+}
 
 /**
  * The ControlConnection class encapsulates the operations that can be performed
@@ -86,13 +105,14 @@ type RobotCommand =
  * The observer pattern is used to notify objects on changes to the control
  * state of this connection.
  */
-export class ControlConnection {
+export class ControlConnection implements IControlConnection {
 
     private static readonly ControlTopic = "topic/control";
     private static readonly ConnectTopic = "topic/connect";
     private static readonly Timeout = 15; // seconds
 
     private readonly client: Paho.MQTT.Client;
+    private readonly lastWillTestament: Paho.MQTT.Message;
     private finishConnection: ((value: void | PromiseLike<void>) => void) | null = null;
     private connectTimeoutHandle = 0;
     private connected = false;
@@ -108,6 +128,13 @@ export class ControlConnection {
 
         this.client.onMessageArrived = this.onMessageArrived.bind(this);
         this.client.onConnectionLost = this.onDisconnected.bind(this);
+
+        this.lastWillTestament = new Paho.MQTT.Message(`close_con:${this.client.clientId}`);
+        this.lastWillTestament.destinationName = ControlConnection.ConnectTopic;
+    }
+
+    get host(): Host {
+        return new Host(this.client.host, this.client.port);
     }
 
     /**
@@ -125,12 +152,9 @@ export class ControlConnection {
      * @returns A promise which resolves when a connection is established.
      */
     connect(): Promise<void> {
-        const lwt = new Paho.MQTT.Message(`close_con:${this.client.clientId}`);
-        lwt.destinationName = ControlConnection.ConnectTopic;
-
         return new Promise((resolve, reject) => {
             this.client.connect({
-                willMessage: lwt,
+                willMessage: this.lastWillTestament,
                 onSuccess: (o: Paho.MQTT.WithInvocationContext) => {
                     this.client.subscribe(ControlConnection.ConnectTopic);
 
@@ -158,6 +182,11 @@ export class ControlConnection {
         });
     }
 
+    disconnect() {
+        this.client.send(this.lastWillTestament);
+        this.client.disconnect();
+    }
+
     /**
      * Update the movement of the robot with a new magnitude.
      */
@@ -180,8 +209,6 @@ export class ControlConnection {
 
         this.movement.x = x;
         this.movement.y = y;
-
-        this.updateControlStateListener();
     }
 
     dispatchArmAction(action: ArmAction) {
@@ -245,17 +272,21 @@ export class ControlConnection {
             return;
         }
 
-        const directions: Set<Direction> = new Set();
-        if (this.movement.y !== 0) {
-            directions.add(
-                this.movement.y > 0 ? Direction.FORWARD : Direction.BACKWARD
-            );
+        const directions = new Map();
+        if (this.movement.x < 0) {
+            directions.set(Direction.LEFT, Math.abs(this.movement.x));
         }
 
-        if (this.movement.x !== 0) {
-            directions.add(
-                this.movement.x > 0 ? Direction.RIGHT : Direction.LEFT
-            );
+        if (this.movement.x > 0) {
+            directions.set(Direction.RIGHT, Math.abs(this.movement.x));
+        }
+
+        if (this.movement.y < 0) {
+            directions.set(Direction.BACKWARD, Math.abs(this.movement.y));
+        }
+
+        if (this.movement.y > 0) {
+            directions.set(Direction.FORWARD, Math.abs(this.movement.y));
         }
 
         this.controlStateListener.onControlStateChange({
@@ -271,15 +302,35 @@ export class ControlConnection {
     }
 
     private onMessageArrived(message: Paho.MQTT.Message) {
-        console.log(message);
+        if (message.destinationName === ControlConnection.ConnectTopic) {
+            this.handleConnectionMessage(message);
+        } else if (message.destinationName === this.controlTopic) {
+            this.handleControlMessage(message.payloadString);
+        }
+    }
 
-        switch (message.destinationName) {
-            case ControlConnection.ConnectTopic:
-                this.handleConnectionMessage(message);
+    private handleControlMessage(payload: string) {
+        const deserialized = JSON.parse(payload);
+
+        if (!this.isCommand(deserialized)) {
+            return;
+        }
+
+        switch (deserialized.command) {
+            case "move":
+                this.movement = deserialized.metadata;
                 break;
-            default:
+
+            case "switch_state":
+                this.movement = { x: 0, y: 0 };
                 break;
         }
+
+        this.updateControlStateListener();
+    }
+
+    private isCommand(obj: object): obj is RobotCommand {
+        return "command" in obj && "metadata" in obj;
     }
 
     private handleConnectionMessage(message: Paho.MQTT.Message): void {
@@ -298,6 +349,8 @@ export class ControlConnection {
                 `con_ok:${this.client.clientId}:${robot_client_id}`,
                 2
             );
+
+            this.client.subscribe(this.controlTopic);
 
             this.finishConnection();
             this.finishConnection = null;
@@ -321,3 +374,17 @@ export class ControlConnection {
         return `${ControlConnection.ControlTopic}/${this.client.clientId}`;
     }
 }
+
+export const MOCK_ROBOT_CONNECTION: IControlConnection = {
+    host: new Host("127.0.0.1", 1883),
+    setControlStateListener(listener: ControlStateListener) {},
+    connect(): Promise<void> {
+        return Promise.resolve();
+    },
+
+    disconnect() {},
+
+    updateMovement(x: number, y: number) {},
+    dispatchArmAction(action: ArmAction) {},
+    setAIEnabled(active: boolean) {}
+};

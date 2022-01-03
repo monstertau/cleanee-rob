@@ -9,18 +9,9 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="status-bar">
-        <div id="gamepad-ui">
-            <button id="check-gamepads">Check gamepads</button>
-            <p id="gamepad-status">No gamepad connected.</p>
-        </div>
-
-        <p id="connection-status"></p>
-    </div>
-
     <div class="state-divs">
         <div class="state-div" id="disconnected-state">
-            <h1>Connect to the robot.</h1>
+            <h1>Connect to CleaneeRob</h1>
 
             <p id="connection-error"></p>
 
@@ -46,27 +37,87 @@
         </div>
 
         <div class="state-div" id="connected-state">
-            <img id="camera-feed">
+            <div id="control-bar">
+                <h1 class="project-name">CleaneeRob</h1>
 
-            <div class="inp
-            ut-state">
-                <div id="movement-states">
-                    <div id="direction-forward" class="movement-state">F</div>
-                    <div id="direction-backward" class="movement-state">B</div>
-                    <div id="direction-left" class="movement-state">L</div>
-                    <div id="direction-right" class="movement-state">R</div>
+                <div class="info-items">
+                    <div class="info-item">
+                        <p class="info-label">MQTT broker address</p>
+                        <p class="info-value" id="mqtt-address"></p>
+                    </div>
+
+                    <div class="info-item">
+                        <p class="info-label">Webcam address</p>
+                        <p class="info-value" id="webcam-address"></p>
+                    </div>
                 </div>
 
-                <div id="arm-states">
-                    <div id="arm-state-up" class="arm-state"></div>
-                    <div id="arm-state-down" class="arm-state"></div>
+                <div class="ai-switch-container">
+                    <input type="checkbox" id="ai-switch">
+                    <label for="ai-switch">Autonomous mode</label>
+                </div>
+            </div>
+
+            <div class="hbox">
+                <div id="camera-feed" class="video-feed">
+                    <h2 class="feed-title">Real time stream</h2>
+                    <img>
                 </div>
 
-                <div id="ai-controls">
-                    <label for="ai-enabled-checkbox">
-                        AI Control
-                        <input type="checkbox" id="ai-enabled-checkbox">
-                    </label>
+                <div id="supervision-container">
+                    <div id="movement-states">
+                        <div class="movement-state" id="movement-forward">
+                            <p class="key">W</p>
+                            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                                <!-- Rounded corner rectangle -->
+                                <rect x="7" y="7" width="86" height="86" rx="15" fill="none" stroke="black" stroke-width="7" class="icon-bg" />
+
+                                <!-- Arrow -->
+                                <g transform="scale(0.5) translate(48 40)">
+                                    <polygon points="50 15, 100 100, 0 100"/>
+                                </g>
+                            </svg>
+                        </div>
+
+                        <div class="movement-state" id="movement-backward">
+                            <p class="key">S</p>
+                            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                                <!-- Rounded corner rectangle -->
+                                <rect x="7" y="7" width="86" height="86" rx="15" fill="none" stroke="black" stroke-width="7" class="icon-bg" />
+
+                                <!-- Arrow -->
+                                <g transform="scale(0.5) translate(48 40)">
+                                    <polygon points="50 15, 100 100, 0 100"/>
+                                </g>
+                            </svg>
+                        </div>
+
+                        <div class="movement-state" id="movement-left">
+                            <p class="key">A</p>
+                            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                                <!-- Rounded corner rectangle -->
+                                <rect x="7" y="7" width="86" height="86" rx="15" fill="none" stroke="black" stroke-width="7" class="icon-bg" />
+
+                                <!-- Arrow -->
+                                <g transform="scale(0.5) translate(48 40)">
+                                    <polygon points="50 15, 100 100, 0 100"/>
+                                </g>
+                            </svg>
+                        </div>
+
+                        <div class="movement-state" id="movement-right">
+                            <p class="key">D</p>
+                            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                                <!-- Rounded corner rectangle -->
+                                <rect x="7" y="7" width="86" height="86" rx="15" fill="none" stroke="black" stroke-width="7" class="icon-bg" />
+
+                                <!-- Arrow -->
+                                <g transform="scale(0.5) translate(48 40)">
+                                    <polygon points="50 15, 100 100, 0 100"/>
+                                </g>
+                            </svg>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -39,8 +39,6 @@ export class DisconnectedState implements ApplicationState {
 
         this.connectionErrorEl = applicationUI.getApplicationElement("connection-error");
 
-        applicationUI.connectionStatus.textContent = "Disconnected";
-
         this.enableForm();
 
         applicationUI.showDiv("disconnected-state");
@@ -83,6 +81,10 @@ export class DisconnectedState implements ApplicationState {
             ])
             .then(([camConnectionResult, mqttConnectionResult]) => {
                 if (this.handleErrors(camConnectionResult, mqttConnectionResult)) {
+                    // If the mqtt connection was established and the camera feed
+                    // produced the error, we want to disconnect to let the robot
+                    // listen for new controllers.
+                    mqttConnection.disconnect();
                     return;
                 }
 

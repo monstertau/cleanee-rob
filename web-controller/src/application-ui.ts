@@ -9,15 +9,9 @@
  * be visible through calling the {@link ApplicationUI#showDiv} method.
  */
 export class ApplicationUI {
-    /**
-     * The HTMLElement that indicates the connection status to the user.
-     */
-    readonly connectionStatus: HTMLElement;
-
     private readonly stateDivs: { [key: string]: HTMLElement } = {};
 
     constructor() {
-        this.connectionStatus = this.getConnectionStatusElement();
         this.stateDivs = this.buildStateDivCache();
     }
 
@@ -52,10 +46,6 @@ export class ApplicationUI {
         }
 
         return el as T;
-    }
-
-    private getConnectionStatusElement(): HTMLElement {
-        return this.getApplicationElement("connection-status");
     }
 
     private buildStateDivCache(): { [key: string]: HTMLElement } {

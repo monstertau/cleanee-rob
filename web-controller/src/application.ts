@@ -2,8 +2,10 @@ import type { ApplicationState } from "./state/application-state.js";
 
 import { ApplicationUI } from "./application-ui.js";
 import { DisconnectedState } from "./state/disconnected-state.js";
-import { GamepadUI } from "./gamepad-ui.js";
 import { RobotInput } from "./robot-input.js";
+import { ConnectedState } from "./state/connected-state.js";
+import { Host } from "./lib.js";
+import { ControlConnection, MOCK_ROBOT_CONNECTION } from "./control-connection.js";
 
 /**
  * The application class is the main entry point to the controller application.
@@ -17,19 +19,21 @@ export class Application {
 
     public readonly robotInput = new RobotInput();
 
-    private applicationUI = new ApplicationUI();
-    private gamepadUI = new GamepadUI(this.robotInput, this.applicationUI);
+    private readonly applicationUI = new ApplicationUI();
 
     private applicationState: ApplicationState;
 
     constructor() {
+        // this.applicationState = new ConnectedState(
+        //     new Host("127.0.0.1", 8080),
+        //     MOCK_ROBOT_CONNECTION
+        // );
+
         this.applicationState = new DisconnectedState();
 
         window.addEventListener("application-state-change", ((ev: CustomEvent<ApplicationState>) => {
             this.setState(ev.detail);
         }) as EventListener);
-
-        this.robotInput.setOnMovementHandler((x, y) => console.log(`Updating input: (${x}, ${y})`));
     }
 
     start() {

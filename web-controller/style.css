@@ -6,29 +6,6 @@
 body {
     margin: 0;
     padding: 0;
-    background-color: #ececec;
-}
-
-.status-bar {
-    background: white;
-    border-bottom: 1px solid #eee;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.4);
-    overflow: auto;
-    padding: 20px;
-    margin-bottom: 20px;
-
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-#gamepad-ui {
-    display: flex;
-    align-items: center;
-}
-
-#check-gamepads {
-    margin-right: 15px;
 }
 
 .form-group {
@@ -68,6 +45,32 @@ body {
     margin-right: 10px;
 }
 
+button {
+    outline: transparent;
+    border: none;
+    background: green;
+    color: white;
+    padding: 10px 15px;
+    font-size: 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+button:hover {
+    background-color: darkgreen;
+}
+
+button:focus {
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.4);
+}
+
+fieldset {
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
 .state-divs {
     display: flex;
     align-items: center;
@@ -75,101 +78,240 @@ body {
 }
 
 .state-div {
-    border: 1px solid #ddd;
     border-radius: 5px;
     padding: 16px;
     background-color: white;
 }
 
 .state-div:not(.active) {
-    display: none;
+    display: none !important;
 }
 
 #disconnected-state {
     width: 650px;
 }
 
-#camera-feed {
-    width: 800px;
-    height: 800px;
-    object-fit: contain;
-    transform: rotate(90deg);
-}
-
-#movement-states {
-    width: 154px;
-    height: 100px;
-    position: relative;
-    margin-top: 10px;
-}
-
-.movement-state {
-    width: 50px;
-    height: 50px;
-    border: 1px solid red;
-    text-align: center;
-    line-height: 50px;
-    position: absolute;
-}
-
-.movement-state.active {
-    background-color: rgba(255, 0, 0, 0.4);
-}
-
-#direction-left {
-    left: 0px;
-    top: 25px;
-}
-
-#direction-right {
-    right: 0px;
-    top: 25px;
-}
-
-#direction-forward {
-    left: 51px;
-}
-
-#direction-backward {
-    left: 51px;
-    top: 51px;
-}
-
-.input-state {
-    display: flex;
-}
-
-.input-state > div:not(:last-child) {
-    margin-right: 25px;
-}
-
-.arm-states {
+#connected-state {
+    width: 100%;
+    max-width: 1200px;
     display: flex;
     flex-direction: column;
+}
+
+#camera-feed {
+    height: 700px;
+    width: 500px;
+}
+
+#camera-feed .feed-title {
+    width: 500px;
+    right: auto;
+}
+
+.video-feed {
+    position: relative;
+}
+
+.video-feed .feed-title {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    margin: 0;
+    padding: 1rem;
+    top: 0;
+    left: 0;
+    right: 0;
+    text-align: center;
+    box-sizing: border-box;
+    z-index: 1;
+}
+
+#camera-feed img {
+    transform-origin: top left;
+    transform: rotate(90deg) translateY(-500px);
+    width: 700px;
+    height: 500px;
+    object-fit: contain;
+    object-position: 0 0;
+}
+
+#control-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 25px;
+}
+
+#control-bar .info-items {
+    display: flex;
+}
+
+#supervision-container {
+    display: flex;
     justify-content: center;
 }
 
-.arm-state {
-    border-width: 25px;
-    border-style: solid;
-    border-color: transparent;
-
-    background: white;
-    width: 0;
-    height: 0;
-
-    --arrow-color: rgba(255, 0, 0, 0.3)
+#movement-states {
+    --icon-size: 100px;
+    width: calc(3 * var(--icon-size));
+    height: calc(3 * var(--icon-size));
+    position: relative;
 }
 
-.arm-state.active {
-    --arrow-color: red;
+.movement-state {
+    width: var(--icon-size);
+    height: var(--icon-size);
+    --rotation: 0deg;
+    --top: 0;
+    --left: 0;
+    --opacity: 0;
+    --key-x: 0;
+    --key-y: 0;
+    position: absolute;
+    top: var(--top);
+    left: var(--left);
 }
 
-#arm-state-up {
-    border-bottom-color: var(--arrow-color);
-    margin-bottom: 20px;
+.movement-state .key {
+    position: absolute;
+    top: var(--key-y);
+    left: var(--key-x);
+    font-weight: bold;
+    color: white;
+    background-color: #757575;
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+    z-index: 1;
 }
 
-#arm-state-down {
-    border-top-color: var(--arrow-color);
+.movement-state svg {
+    transform: rotate(var(--rotation));
+}
+
+.movement-state svg .icon-bg {
+    fill: rgba(0, 128, 0, var(--opacity));
+}
+
+#movement-forward {
+    --left: var(--icon-size);
+    --key-x: 35px;
+    --key-y: -25px;
+}
+
+#movement-backward {
+    --left: var(--icon-size);
+    --top: calc(2 * var(--icon-size));
+    --rotation: 180deg;
+    --key-x: 35px;
+    --key-y: 62px;
+}
+
+#movement-left {
+    --top: var(--icon-size);
+    --rotation: 270deg;
+    --key-x: -7px;
+    --key-y: 18px;
+}
+
+#movement-right {
+    --top: var(--icon-size);
+    --left: calc(2 * var(--icon-size));
+    --rotation: 90deg;
+    --key-x: 78px;
+    --key-y: 18px;
+}
+
+.hbox {
+    display: flex;
+    flex: 1;
+    flex-direction: row;
+}
+
+.hbox > div {
+    flex: 1;
+}
+
+.info-item:not(:last-child) {
+    margin-right: 20px;
+}
+
+.info-item p {
+    margin: 0;
+}
+
+.info-item .info-label {
+    font-size: 14px;
+    font-weight: bold;
+    color: #757575;
+    margin-bottom: .25em;
+}
+
+.ai-switch-container {
+    position: relative;
+}
+
+/* Switch CSS: https://codepen.io/Qvcool/pen/bdzVYW */
+.ai-switch-container input {
+    margin: 0px;
+    margin-top: 1px;
+    cursor: pointer;
+    opacity: 0;
+    opacity: 0;
+    position: absolute;
+    z-index: 1;
+    top: 0px;
+    left: 0px;
+    background: red;
+    width: 40px;
+    height: 20px;
+}
+
+.ai-switch-container input:checked + label::before {
+    /* unchecked */
+    background-color: green;
+    content: "";
+    padding-left: 6px;
+}
+
+.ai-switch-container input:checked + label::after {
+    left: 21px;
+}
+
+.ai-switch-container label {
+    position: relative;
+    padding-left: 46px;
+}
+
+.ai-switch-container label::before,
+.ai-switch-container label::after {
+    position: absolute;
+    border-radius: 10px;
+    transition: background-color 0.3s, left 0.3s;
+}
+
+.ai-switch-container label::before {
+    /* checked */
+    content: "";
+    box-sizing: border-box;
+    padding-left: 23px;
+    font-size: 12px;
+    line-height: 20px;
+    background-color: #757575;
+    left: 0px;
+    top: 0px;
+    height: 20px;
+    width: 40px;
+    border-radius: 10px;
+}
+
+.ai-switch-container label::after {
+    content: "";
+    letter-spacing: 20px;
+    background: #fff;
+    left: 1px;
+    top: 1px;
+    height: 18px;
+    width: 18px;
 }
