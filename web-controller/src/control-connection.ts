@@ -296,8 +296,6 @@ export class ControlConnection implements IControlConnection {
     }
 
     private onDisconnected(error: Paho.MQTT.MQTTError) {
-        alert("Connection to the robot was lost.");
-
         this.enterDisconnectedState();
     }
 
@@ -319,6 +317,18 @@ export class ControlConnection implements IControlConnection {
         switch (deserialized.command) {
             case "move":
                 this.movement = deserialized.metadata;
+                break;
+
+            case "arm_in":
+                this.armMovement = ArmMovement.UP;
+                break;
+
+            case "arm_out":
+                this.armMovement = ArmMovement.DOWN;
+                break;
+
+            case "arm_stop":
+                this.armMovement = ArmMovement.NONE;
                 break;
 
             case "switch_state":
@@ -361,6 +371,8 @@ export class ControlConnection implements IControlConnection {
     }
 
     private enterDisconnectedState(): void {
+        alert("Connection to the robot was lost.");
+
         this.connected = false;
 
         const event = new CustomEvent("application-state-change", {

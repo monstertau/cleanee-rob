@@ -6,7 +6,7 @@ import yaml
 from core.detection import DetectionConfig, BufferlessVideoCapture, BottleDetector
 from core.instructions import *
 from core.mqtt_connection import ConnectionConfig, MqttConnection
-
+from core.video_server import run_mjpeg_server
 
 CONFIG_NAME = "config.yml"
 
@@ -104,6 +104,8 @@ def main():
     mqtt_connection.on_active_change = on_active_change
     mqtt_connection.connect()
 
+    mjpeg_image_buffer = run_mjpeg_server()
+
     while True:
         frame = cv2.rotate(capture.read(), cv2.ROTATE_90_CLOCKWISE)
         frame_height, frame_width, _ = frame.shape
@@ -118,6 +120,8 @@ def main():
         if main.run_model:
             instruction, frame = detector.get_instruction(frame)
             mqtt_connection.submit_instruction(instruction)
+
+        mjpeg_image_buffer.write(cv2.imencode('.jpg', frame)[1].tobytes())
 
         cv2.imshow("Image", frame)
         key = cv2.waitKey(1)

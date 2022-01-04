@@ -148,11 +148,22 @@ fieldset {
 
 #supervision-container {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+}
+
+#supervision-container .video-feed {
+    width: 300px;
+}
+
+#supervision-container .video-feed img {
+    width: 100%;
+    height: 100%;
 }
 
 #movement-states {
     --icon-size: 100px;
+    margin-top: 40px;
     width: calc(3 * var(--icon-size));
     height: calc(3 * var(--icon-size));
     position: relative;
@@ -221,6 +232,19 @@ fieldset {
     --rotation: 90deg;
     --key-x: 78px;
     --key-y: 18px;
+}
+
+#arm-down {
+    --top: calc(var(--icon-size) * 2);
+    --key-x: -7px;
+    --key-y: 62px;
+}
+
+#arm-up {
+    --top: calc(var(--icon-size) * 2);
+    --left: calc(var(--icon-size) * 2);
+    --key-x: 78px;
+    --key-y: 62px;
 }
 
 .hbox {

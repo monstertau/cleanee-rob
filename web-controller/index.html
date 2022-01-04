@@ -30,6 +30,12 @@
                     </div>
 
                     <div class="form-group">
+                        <label for="cv-ip">CV MJPEG IP address</label>
+                        <input type="text" id="cv-ip" name="cv-ip" placeholder="127.0.0.1">
+                        <input class="additional" type="text" id="cv-port" name="cv-port" placeholder="9000">
+                    </div>
+
+                    <div class="form-group">
                         <button type="submit">Connect</button>
                     </div>
                 </fieldset>
@@ -65,6 +71,11 @@
                 </div>
 
                 <div id="supervision-container">
+                    <div id="cv-feed" class="video-feed">
+                        <h2 class="feed-title">AI stream</h2>
+                        <img>
+                    </div>
+
                     <div id="movement-states">
                         <div class="movement-state" id="movement-forward">
                             <p class="key">W</p>
@@ -115,6 +126,28 @@
                                 <g transform="scale(0.5) translate(48 40)">
                                     <polygon points="50 15, 100 100, 0 100"/>
                                 </g>
+                            </svg>
+                        </div>
+
+                        <div class="movement-state" id="arm-down">
+                            <p class="key">Q</p>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                                <rect x="7" y="7" width="86" height="86" rx="15" fill="none" stroke="black" stroke-width="7" class="icon-bg" />
+                                <path d="M40.53 45.78L33.25 50.29L40.53 54.8L40.53 51.94L48.25 51.94L48.25 48.63L40.53 48.63L40.53 45.78Z"></path>
+                                <path d="M59.61 54.8L66.79 50.12L59.4 45.78L59.47 48.64L51.75 48.82L51.83 52.12L59.55 51.94L59.61 54.8Z"></path>
+                                <path d="M66.79 30L70.79 30L70.79 70L66.79 70L66.79 30Z"></path>
+                                <path d="M29.25 30L33.25 30L33.25 70L29.25 70L29.25 30Z"></path>
+                            </svg>
+                        </div>
+
+                        <div class="movement-state" id="arm-up">
+                            <p class="key">E</p>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                                <rect x="7" y="7" width="86" height="86" rx="15" fill="none" stroke="black" stroke-width="7" class="icon-bg" />
+                                <path d="M36.97 54.8L44.25 50.29L36.97 45.78L36.97 48.63L29.25 48.63L29.25 51.94L36.97 51.94L36.97 54.8Z"></path>
+                                <path fill="#000" d="M62.88 45.78L55.6 50.29L62.88 54.8L62.88 51.94L70.6 51.94L70.6 48.63L62.88 48.63L62.88 45.78Z"></path>
+                                <path fill="#000" d="M51.75 30L55.75 30L55.75 70L51.75 70L51.75 30Z"></path>
+                                <path fill="#000" d="M44.25 30L48.25 30L48.25 70L44.25 70L44.25 30Z"></path>
                             </svg>
                         </div>
                     </div>

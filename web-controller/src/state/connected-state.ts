@@ -18,6 +18,7 @@ export class ConnectedState implements ApplicationState, ControlStateListener {
     constructor(
         private camHost: Host,
         private controlConnection: IControlConnection,
+        private cvHost: Host,
     ) {
         controlConnection.setControlStateListener(this);
     }
@@ -25,14 +26,16 @@ export class ConnectedState implements ApplicationState, ControlStateListener {
     onEnter(application: Application, applicationUI: ApplicationUI): void {
         const feedEl = applicationUI.getApplicationElement<HTMLImageElement>("camera-feed")
             .querySelector("img");
-
         if (!feedEl) throw new Error("Unable to find feed element.");
 
-        console.log(feedEl);
+        const cvFeed = applicationUI.getApplicationElement<HTMLImageElement>("cv-feed")
+            .querySelector("img");
+        if (!cvFeed) throw new Error("Unable to find feed element.");
+
         feedEl.src = `http://${this.camHost}/mjpeg`;
+        cvFeed.src = `http://${this.cvHost}/mjpeg`;
 
         this.movementStates = this.getMovementStateElements(applicationUI);
-        // this.armStates = this.getArmStateElements(applicationUI);
 
         applicationUI.getApplicationElement("mqtt-address").textContent = this.controlConnection.host.toString();
         applicationUI.getApplicationElement("webcam-address").textContent = this.camHost.toString();
@@ -79,19 +82,12 @@ export class ConnectedState implements ApplicationState, ControlStateListener {
             el?.style.setProperty("--opacity", `${magnitude}`);
         });
 
-        // const armStateEl = this.armStates.find(el => el.id === `arm-state-${newState.armMovement}`);
-        // if (armStateEl) {
-        //     armStateEl.classList.add("active");
-        // }
+        const armStateEl = this.movementStates.find(el => el.id === `arm-${newState.armMovement}`);
+        armStateEl?.style.setProperty("--opacity", "0.5");
     }
 
     private getMovementStateElements(applicationUI: ApplicationUI): HTMLElement[] {
         const containerEl = applicationUI.getApplicationElement("movement-states");
         return Array.from(containerEl.children) as HTMLElement[];
-    }
-
-    private getArmStateElements(applicationUI: ApplicationUI): Element[] {
-        const containerEl = applicationUI.getApplicationElement("arm-states");
-        return Array.from(containerEl.children);
     }
 }

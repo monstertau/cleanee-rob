@@ -29,6 +29,8 @@ export class DisconnectedState implements ApplicationState {
     static readonly CamPortFieldId = "cam-port";
     static readonly MqttIpFieldId = "mqtt-ip";
     static readonly MqttPortFieldId = "mqtt-port";
+    static readonly CvIpFieldId = "cv-ip";
+    static readonly CvPortFieldId = "cv-port";
 
     private connectionDetailsForm: HTMLFormElement | undefined = undefined;
     private connectionErrorEl: HTMLElement | undefined = undefined;
@@ -62,11 +64,15 @@ export class DisconnectedState implements ApplicationState {
             new Host(
                 formData.get(DisconnectedState.MqttIpFieldId) as string,
                 parseInt(formData.get(DisconnectedState.MqttPortFieldId) as string)
+            ),
+            new Host(
+                formData.get(DisconnectedState.CvIpFieldId) as string,
+                parseInt(formData.get(DisconnectedState.CvPortFieldId) as string)
             )
         );
     }
 
-    private initializeConnection(camHost: Host, mqttHost: Host): void {
+    private initializeConnection(camHost: Host, mqttHost: Host, cvHost: Host): void {
         const mqttConnection = new ControlConnection(
             mqttHost.address,
             mqttHost.port
@@ -89,7 +95,7 @@ export class DisconnectedState implements ApplicationState {
                 }
 
                 const event = new CustomEvent("application-state-change", {
-                    detail: new ConnectedState(camHost, mqttConnection)
+                    detail: new ConnectedState(camHost, mqttConnection, cvHost)
                 });
 
                 window.dispatchEvent(event);
