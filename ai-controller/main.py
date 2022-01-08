@@ -40,7 +40,7 @@ def load_config() -> Tuple[ConnectionConfig, DetectionConfig]:
     with open(config_path, 'r') as config_file:
         parsed_config = yaml.full_load(config_file)
 
-    def verify_keys(dict_key: str, keys: list[str]) -> bool:
+    def verify_keys(dict_key: str, keys: list) -> bool:
         config = parsed_config[dict_key]
         missing_keys = False
         for key in keys:
