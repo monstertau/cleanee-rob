@@ -30,7 +30,6 @@ class BufferlessVideoCapture:
         Read frames from the video capture as soon as they become available. We
         only keep track of the latest frame of the capture.
         """
-
         while True:
             ret, frame = self.cap.read()
             if not ret:

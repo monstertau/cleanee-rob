@@ -87,10 +87,41 @@ For manual control, basically we will have some JSON Format Command publish to M
 - Instruction: Set the arm position to current position. the Arm Reset Command will be affected after send this command
 - JSON Format:
 ```
-    "command": "arm_reset_position",
+    "command": "arm_set_position",
     "metadata": {
     }
 ```
+### 3.7. Arm Grab Command
+- Instruction: Send the arm grab command to the robot
+- JSON Format:
+```
+    "command": "arm_grab",
+    "metadata": {
+    }
+```
+### 3.8. Switch state Command
+- Instruction: Switch the state between roaming and manual command
+- JSON Format:
+```
+    "command": "switch_state",
+    "metadata": {
+    "state":"roaming/commands"
+    }
+```
+### 3.9. Init Connection 
+- Instruction: init end to end connection from client to robot
+Format:
+```
+    init_con:${client id}
+```
+### 4.0. Close Connection 
+- Instruction: close end to end connection from client to robot
+Format:
+```
+    close_con:${client id}
+```
+
+
 ## 4. Additional
 - (Optional) If you want to test out the functionalities as well as message design of robot, please head to the `test_keyboard.py` file. Run `python3 test_keyboard.py` file and start test the robot with some useful command:
 ```

@@ -44,6 +44,6 @@ https://nodejs.org/en/download/
 - First, we need to run our MQTT Broker Server from Docker Compose: `docker compose up` or `docker compose up -d` for running in background
 - For detail instruction of running robot and running control application, check here:
   - [Running Robot](./ev3_robot/INSTRUCTION.md)
-  - [Running GUI Application](./README.md)
+  - [Running GUI Application](./web-controller/README.md)
 ---
 ## 3. Authors

@@ -1,0 +1,9 @@
+path: ../Dataset
+train: train/images/ # 128 images
+val: test/images/  # 128 images
+
+# number of classes
+nc: 1
+
+# class names
+names: [  'PET (plastic) bottles' ]
